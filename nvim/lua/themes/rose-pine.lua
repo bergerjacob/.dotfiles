@@ -1,0 +1,4 @@
+-- This file is optional if you don't have additional configurations
+-- for the rose-pine colorscheme. Since the colorscheme is already
+-- loaded in the plugin's `init` function, you can leave this empty
+-- or add further customizations here.
