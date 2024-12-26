@@ -1,8 +1,5 @@
 -- Key mappings
 
--- Remap ENTER to create a new line without entering insert mode
-vim.keymap.set("n", "<CR>", "o<Esc>")
-
 -- Toggle Undotree with <leader>u
 vim.keymap.set("n", "<leader>u", vim.cmd.UndotreeToggle)
 
@@ -22,9 +19,6 @@ vim.api.nvim_set_keymap("n", "<C-g>", "z=", { noremap = true, silent = true })
 -- 		vim.api.nvim_feedkeys('r', 'n', false)
 -- 	end)
 -- end)
-
--- Delete a line without yanking
-vim.keymap.set("n", "dd", "\"_dd")
 
 -- Disable arrow keys in normal mode
 vim.keymap.set("n", "<left>", '<cmd>echo "Use h to move!"<CR>')
