@@ -32,3 +32,6 @@ vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 
 -- Paste over selected text while keeping your yank buffer
 vim.keymap.set("x", "<leader>p", "\"_dP")
+
+-- Show diagnostic hover (float) for the current cursor position
+vim.keymap.set("n", "<leader>k", vim.diagnostic.open_float, { desc = "Show Line diagnostics" })
