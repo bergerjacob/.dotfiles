@@ -1,2 +1,13 @@
 [mouse]
-right_button = "None"
+bindings = [
+    { mouse = "Right", action = "None" }
+]
+
+[font]
+size = 16.0
+
+[window]
+startup_mode = "Maximized"
+
+[terminal]
+shell = { program = "/home/bergerj/.dotfiles/startup.sh", args = [] }
