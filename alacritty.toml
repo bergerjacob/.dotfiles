@@ -1,8 +1,3 @@
-[mouse]
-bindings = [
-    { mouse = "Right", action = "None" }
-]
-
 [font]
 size = 16.0
 
