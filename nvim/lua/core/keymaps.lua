@@ -35,3 +35,9 @@ vim.keymap.set("x", "<leader>p", "\"_dP")
 
 -- Show diagnostic hover (float) for the current cursor position
 vim.keymap.set("n", "<leader>k", vim.diagnostic.open_float, { desc = "Show Line diagnostics" })
+
+-- Copy full file path of currently opened buffer
+vim.keymap.set('n', '<leader>cp', function()
+  vim.fn.setreg('+', vim.fn.expand('%:p'))
+  print('Copied full path to clipboard: ' .. vim.fn.expand('%:p'))
+end, { noremap = true, silent = false, desc = "Copy full file path to system clipboard" })
