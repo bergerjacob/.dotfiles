@@ -103,19 +103,19 @@ return {
 		require("mason").setup()
 		local ensure_installed = vim.tbl_keys(servers)
 		require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
-		-- require("mason-lspconfig").setup({
-		-- 	handlers = {
-		-- 		function(server_name)
-		-- 			local opts = {
-		-- 				capabilities = capabilities,
-		-- 			}
-		-- 			if servers[server_name] then
-		-- 				opts = vim.tbl_deep_extend("force", opts, servers[server_name])
-		-- 			end
-		-- 			require("lspconfig")[server_name].setup(opts)
-		-- 		end,
-		-- 	},
-		-- })
+		require("mason-lspconfig").setup({
+			handlers = {
+				function(server_name)
+					local opts = {
+						capabilities = capabilities,
+					}
+					if servers[server_name] then
+						opts = vim.tbl_deep_extend("force", opts, servers[server_name])
+					end
+					require("lspconfig")[server_name].setup(opts)
+				end,
+			},
+		})
 	end,
 }
 
