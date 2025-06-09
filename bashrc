@@ -135,3 +135,6 @@ alias pip="pip3"
 
 export PATH="$PATH:$HOME/scripts"
 export PATH="$PATH:/usr/local/MATLAB/R2024b/bin"
+
+export VISUAL=vim
+export EDITOR="$VISUAL"
