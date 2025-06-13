@@ -12,6 +12,12 @@ vim.g.netrw_bufsettings = 'noma nomod nu rnu nobl nowrap ro'
 -- Enable mouse mode
 vim.opt.mouse = "a"
 
+-- Disable the right-click context menu
+vim.keymap.set({ "n", "v", "i" }, "<RightMouse>", "<nop>")
+
+-- Disable middle-mouse click paste/actions
+vim.keymap.set({ "n", "v", "i" }, "<MiddleMouse>", "<nop>")
+
 -- Don't show the mode, since it's already in the status line
 vim.opt.showmode = false
 
