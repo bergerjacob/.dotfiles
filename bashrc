@@ -138,3 +138,6 @@ export PATH="$PATH:/usr/local/MATLAB/R2024b/bin"
 
 export VISUAL=vim
 export EDITOR="$VISUAL"
+
+# Make cursor visible in Sway
+export WLR_NO_HARDWARE_CURSORS=1
