@@ -1,6 +1,8 @@
 #!/bin/bash
 # ~/.config/alacritty/start_tmux.sh
 
+echo "Running startup.sh"
+
 # Check if a tmux session exists.
 # We redirect stderr to /dev/null to suppress "no server running on ..." messages if no session exists.
 if tmux has-session 2>/dev/null; then

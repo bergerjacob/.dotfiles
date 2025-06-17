@@ -1,8 +1,9 @@
 [font]
-size = 16.0
+size = 12.0
 
 [window]
 startup_mode = "Maximized"
+decorations_theme_variant = "Dark"
 
 [terminal]
 shell = { program = "/home/bergerj/.dotfiles/startup.sh", args = [] }

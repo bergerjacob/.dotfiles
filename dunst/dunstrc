@@ -1,0 +1,5 @@
+[[rules]]
+    appname = "bluetoothd"
+    summary = ".*"
+    ignore = true
+

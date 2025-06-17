@@ -141,3 +141,4 @@ export EDITOR="$VISUAL"
 
 # Make cursor visible in Sway
 export WLR_NO_HARDWARE_CURSORS=1
+. "$HOME/.cargo/env"
