@@ -47,7 +47,7 @@ bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ to
 bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
 
 # Autostart the blue light filter (gammastep)
-exec_always --no-startup-id ~/.config/i3/scripts/launch_gammastep.sh
+exec_always --no-startup-id ~/Scripts/launch-gammastep.sh
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
