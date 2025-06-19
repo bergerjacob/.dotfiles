@@ -1,0 +1,11 @@
+[Unit]
+Description=Load OpenRGB 'lights off' profile
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/openrgb --profile /home/bergerj/.config/OpenRGB/lights-off.orp
+
+[Install]
+WantedBy=graphical-session.target
