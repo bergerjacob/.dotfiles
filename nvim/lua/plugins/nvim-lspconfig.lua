@@ -3,12 +3,10 @@ return {
 	dependencies = {
 		{ "williamboman/mason.nvim", config = true },
 		"williamboman/mason-lspconfig.nvim",
-		"WhoIsSethDaniel/mason-tool-installer.nvim",
 		{ "j-hui/fidget.nvim",       opts = {} },
 		"hrsh7th/cmp-nvim-lsp",
 	},
 	config = function()
-		-- LSP key mappings and settings
 		vim.api.nvim_create_autocmd("LspAttach", {
 			group = vim.api.nvim_create_augroup("lsp_attach", { clear = true }),
 			callback = function(event)
@@ -17,7 +15,6 @@ return {
 					vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
 				end
 
-				-- LSP key mappings
 				map("gd", require("telescope.builtin").lsp_definitions, "[G]oto [D]efinition")
 				map("gr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
 				map("gI", require("telescope.builtin").lsp_implementations, "[G]oto [I]mplementation")
@@ -29,14 +26,14 @@ return {
 				map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 
 				local client = vim.lsp.get_client_by_id(event.data.client_id)
-				if client and client.supports_method("textDocument/documentHighlight") then
+				-- FIX: Use client:supports_method (colon) instead of client.supports_method (dot)
+				if client and client:supports_method("textDocument/documentHighlight") then
 					local highlight_augroup = vim.api.nvim_create_augroup("lsp_document_highlight", { clear = false })
 					vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
 						buffer = event.buf,
 						group = highlight_augroup,
 						callback = vim.lsp.buf.document_highlight,
 					})
-
 					vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
 						buffer = event.buf,
 						group = highlight_augroup,
@@ -44,7 +41,8 @@ return {
 					})
 				end
 
-				if client and client.supports_method("textDocument/inlayHint") then
+				-- FIX: Use client:supports_method (colon) instead of client.supports_method (dot)
+				if client and client:supports_method("textDocument/inlayHint") then
 					map("<leader>th", function()
 						vim.lsp.inlay_hint(0, nil)
 					end, "[T]oggle Inlay [H]ints")
@@ -59,31 +57,12 @@ return {
 			lua_ls = {
 				settings = {
 					Lua = {
-						runtime = {
-							version = "LuaJIT",
-							path = vim.split(package.path, ";"),
-						},
-						diagnostics = {
-							globals = { "vim" },
-						},
-						workspace = {
-							library = vim.api.nvim_get_runtime_file("", true),
-							checkThirdParty = false,
-						},
-						completion = {
-							callSnippet = "Replace",
-						},
-						telemetry = {
-							enable = false,
-						},
+						runtime = { version = "LuaJIT" },
+						diagnostics = { globals = { "vim" } },
+						workspace = { library = vim.api.nvim_get_runtime_file("", true) },
 					},
 				},
-				root_dir = function(fname)
-					return require("lspconfig").util.find_git_ancestor(fname)
-						or require("lspconfig").util.path.dirname(fname)
-				end,
 			},
-			-- grammarly = {},
 			pyright = {
 				settings = {
 					python = {
@@ -96,14 +75,17 @@ return {
 				},
 			},
 			jsonls = {
-				filetypes = { "json", "jsonc", "jsonl" }
-			}
+				filetypes = { "json", "jsonc", "jsonl" },
+			},
+			ts_ls = {},
 		}
 
 		require("mason").setup()
-		local ensure_installed = vim.tbl_keys(servers)
-		require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
+
+		-- FIX: Reverted to the older API style to prevent the 'setup_handlers' error.
+		-- This combines installation and configuration into a single setup call.
 		require("mason-lspconfig").setup({
+			ensure_installed = vim.tbl_keys(servers),
 			handlers = {
 				function(server_name)
 					local opts = {
@@ -118,4 +100,3 @@ return {
 		})
 	end,
 }
-
