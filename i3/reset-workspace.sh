@@ -6,18 +6,18 @@
 # --- CONFIGURATION ---
 # Defines the home workspace for each application.
 declare -A APP_HOMES=(
-    ["class:Alacritty"]=""
-    ["class:Chrome-main"]="󰖟"
-    ["class:Chrome-orst"]="󰖟󰑴"
-    ["class:Chrome-personal"]="󰖟"
-    ["class:Spotify"]=""
-    ["class:thunderbird-default"]="󰇮"
-    ["instance:crx_cifhbcnohmdccbgoicgdjpfamggdegmo"]="󰊻"
-    ["instance:crx_kjbdgfilnfhdoflbpgamdcdgpehopbep"]=""
-    ["instance:crx_kajebgjangihfbkjfejcanhanjmmbcfd"]="󰟵"
-    ["mark:discord_personal"]=""
-    ["mark:discord_professional"]="󰑴"
-    ["class:discord"]="" # Fallback for any unmarked Discord window
+    ["class:Alacritty"]="1:"
+    ["class:Chrome-main"]="2:"
+    ["class:Chrome-orst"]="3:󰑴"
+    ["class:Chrome-personal"]="10:"
+    ["class:Spotify"]="11:"
+    ["class:thunderbird-default"]="7:󰇮"
+    ["instance:crx_cifhbcnohmdccbgoicgdjpfamggdegmo"]="6:󰊻"
+    ["instance:crx_kjbdgfilnfhdoflbpgamdcdgpehopbep"]="8:"
+    ["instance:crx_kajebgjangihfbkjfejcanhanjmmbcfd"]="9:󰟵"
+    ["mark:discord_personal"]="4:"
+    ["mark:discord_professional"]="5:󰙯"
+    ["class:discord"]="4:" # Fallback for any unmarked Discord window
 )
 
 # --- SCRIPT LOGIC ---

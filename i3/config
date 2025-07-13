@@ -59,17 +59,17 @@ bindsym $mod+Shift+l move right
 # -------------------------------------------------------------------
 # -- Workspace and monitor assignments
 # -------------------------------------------------------------------
-set $ws_terminal ""
-set $ws_browser_main "󰖟"
-set $ws_browser_orst "󰖟󰑴"
-set $ws_browser_personal "󰖟"
-set $ws_discord_personal ""
-set $ws_discord_professional "󰑴"
-set $ws_teams "󰊻"
-set $ws_email "󰇮"
-set $ws_calendar ""
-set $ws_music ""
-set $ws_password_manager "󰟵"
+set $ws_terminal "1:"
+set $ws_browser_main "2:"
+set $ws_browser_orst "3:󰑴"
+set $ws_browser_personal "10:"
+set $ws_discord_personal "4:"
+set $ws_discord_professional "5:󰙯"
+set $ws_teams "6:󰊻"
+set $ws_email "7:󰇮"
+set $ws_calendar "8:"
+set $ws_music "11:"
+set $ws_password_manager "9:󰟵"
 
 workspace $ws_terminal output DP-0
 workspace $ws_browser_main output DP-0
@@ -222,4 +222,5 @@ bindsym $mod+Shift+y exec "i3-nagbar -t warning -m 'You pressed the exit shortcu
 # finds out, if available)
 bar {
         status_command i3status
+        strip_workspace_numbers yes
 }
