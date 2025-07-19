@@ -109,6 +109,9 @@ bindsym $mod+s workspace $ws_calendar
 bindsym $mod+a workspace $ws_music
 bindsym $mod+x workspace $ws_password_manager
 
+# --- Toggle to last workspace ---
+bindsym $mod+6 workspace back_and_forth
+
 # -------------------------------------------------------------------
 # -- Keybindings: Application Summoning
 # -------------------------------------------------------------------
@@ -201,6 +204,8 @@ bindsym $mod+n fullscreen toggle
 
 focus_follows_mouse no
 mouse_warping none
+
+bindsym $mod+Control+s exec --no-startup-id ~/Scripts/screenshot 
 
 # # resize window (you can also use the mouse for that)
 # mode "resize" {
