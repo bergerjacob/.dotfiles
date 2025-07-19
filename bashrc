@@ -127,7 +127,6 @@ fi
 
 
 export PATH="$HOME/Apps:$PATH"
-alias vim="$HOME/Apps/nvim.appimage"
 alias cursor="$HOME/Apps/cursor.appimage"
 
 alias python="python3"
@@ -135,6 +134,7 @@ alias pip="pip3"
 
 export PATH="$PATH:$HOME/scripts"
 export PATH="$PATH:/usr/local/MATLAB/R2024b/bin"
+export PATH="/home/bergerj/Scripts:$PATH"
 
 export VISUAL=vim
 export EDITOR="$VISUAL"
