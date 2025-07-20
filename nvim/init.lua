@@ -28,8 +28,3 @@ require("lazy").setup("plugins", {
 		icons = {}
 	},
 })
-
--- Load theme
-require('themes.rose-pine')
-
--- Any additional configurations can be added here
