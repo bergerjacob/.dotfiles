@@ -13,6 +13,9 @@ require('core.options')
 require('core.keymaps')
 require('core.autocmds')
 
+-- Remove this when no deprecation errors
+vim.deprecate = function() end
+
 -- Install lazy.nvim if not already installed
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.loop or vim.uv).fs_stat(lazypath) then
