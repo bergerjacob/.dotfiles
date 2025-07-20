@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Chrome - ORST
+Exec=google-chrome-stable --user-data-dir=/home/bergerj/.config/chrome-profiles/orst --class="Chrome-orst"
+Icon=google-chrome
+Type=Application
+Categories=Network;WebBrowser;

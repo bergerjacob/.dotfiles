@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Chrome - Main
+Exec=google-chrome-stable --user-data-dir=/home/bergerj/.config/chrome-profiles/main --class="Chrome-main"
+Icon=google-chrome
+Type=Application
+Categories=Network;WebBrowser;
