@@ -3,6 +3,8 @@
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
+vim.g.colorscheme = "tokyonight-moon"
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
@@ -28,3 +30,5 @@ require("lazy").setup("plugins", {
 		icons = {}
 	},
 })
+
+vim.cmd("colorscheme " .. vim.g.colorscheme)
