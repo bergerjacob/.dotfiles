@@ -76,6 +76,7 @@ set $ws_email "7:󰇮"
 set $ws_calendar "8:"
 set $ws_music "11:"
 set $ws_password_manager "9:󰟵"
+set $ws_temp "12:"
 
 workspace $ws_terminal output DP-0
 workspace $ws_browser_main output DP-0
@@ -88,6 +89,7 @@ workspace $ws_email output DP-0
 workspace $ws_calendar output DP-0
 workspace $ws_music output HDMI-0
 workspace $ws_password_manager output DP-0
+workspace $ws_temp output DP-0
 
 
 # -------------------------------------------------------------------
@@ -111,6 +113,7 @@ bindsym $mod+q workspace $ws_email
 bindsym $mod+s workspace $ws_calendar
 bindsym $mod+a workspace $ws_music
 bindsym $mod+x workspace $ws_password_manager
+bindsym $mod+grave workspace $ws_temp
 
 # --- Toggle to last workspace ---
 bindsym $mod+6 workspace back_and_forth
