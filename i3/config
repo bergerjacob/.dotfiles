@@ -24,6 +24,9 @@ exec --no-startup-id xset -dpms
 # xss-lock grabs a logind suspend inhibit lock and will use the custom lock script
 exec --no-startup-id xss-lock --transfer-sleep-lock -- /home/bergerj/Scripts/tty-lock.sh
 
+# Start clipboard manager
+exec --no-startup-id copyq
+
 # TODO figure this out
 # Use pactl to adjust volume in PulseAudio.
 set $refresh_i3status killall -SIGUSR1 i3status
