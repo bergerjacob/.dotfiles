@@ -67,6 +67,8 @@ vim.opt.softtabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
 
+vim.opt.swapfile = false
+
 -- When doing :Vex make it split right
 vim.api.nvim_create_user_command('Vex', function()
 	vim.cmd('Vexplore')
