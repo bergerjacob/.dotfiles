@@ -161,6 +161,9 @@ bindsym $mod+Mod1+a exec --no-startup-id ~/.dotfiles/i3/summon.sh class Spotify 
 bindsym $mod+Shift+x exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_kajebgjangihfbkjfejcanhanjmmbcfd tiled_right
 bindsym $mod+Mod1+x exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_kajebgjangihfbkjfejcanhanjmmbcfd floating
 
+# Special move focused container to temp workspace
+bindsym $mod+Shift+grave move container to workspace number $ws_temp
+
 # -------------------------------------------------------------------
 # -- Keybindings: Workspace Reset
 # -------------------------------------------------------------------
