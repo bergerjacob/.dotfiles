@@ -117,6 +117,7 @@ bindsym $mod+grave workspace $ws_temp
 
 # --- Toggle to last workspace ---
 bindsym $mod+6 workspace back_and_forth
+bindsym $mod+Tab workspace back_and_forth
 
 # -------------------------------------------------------------------
 # -- Keybindings: Application Summoning
