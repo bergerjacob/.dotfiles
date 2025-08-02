@@ -135,6 +135,7 @@ alias pip="pip3"
 export PATH="$PATH:$HOME/scripts"
 export PATH="$PATH:/usr/local/MATLAB/R2024b/bin"
 export PATH="/home/bergerj/Scripts:$PATH"
+export PATH="/home/bergerj/.local/share/gem/ruby/3.1.0/bin:$PATH"
 
 export VISUAL=vim
 export EDITOR="$VISUAL"
@@ -145,3 +146,9 @@ bind -r '\C-n'
 # Make cursor visible in Sway
 export WLR_NO_HARDWARE_CURSORS=1
 . "$HOME/.cargo/env"
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/bergerj/google-cloud-sdk/path.bash.inc' ]; then . '/home/bergerj/google-cloud-sdk/path.bash.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/bergerj/google-cloud-sdk/completion.bash.inc' ]; then . '/home/bergerj/google-cloud-sdk/completion.bash.inc'; fi
