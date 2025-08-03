@@ -131,6 +131,7 @@ alias cursor="$HOME/Apps/cursor.appimage"
 
 alias python="python3"
 alias pip="pip3"
+alias fd='fdfind'
 
 export PATH="$PATH:$HOME/scripts"
 export PATH="$PATH:/usr/local/MATLAB/R2024b/bin"
