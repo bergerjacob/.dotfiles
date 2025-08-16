@@ -183,7 +183,7 @@ bindsym $mod+Mod1+4 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_
 bindsym $mod+Mod1+5 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_5 floating
 
 # Dismiss all summoned windows back to their home slots
-bindsym $mod+Escape exec --no-startup-id ~/.dotfiles/i3/dismiss-summoned.sh
+bindsym $mod+Escape exec --no-startup-id ~/.dotfiles/i3/reset-workspace.sh
 
 # --- 3. Send to Workspace/Slot (Prefix Key) ---
 # Defines a mode for sending windows. The mode name "send" is simple and robust.
