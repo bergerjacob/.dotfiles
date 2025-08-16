@@ -101,10 +101,6 @@ bindsym $mod+s workspace $ws_calendar
 bindsym $mod+a workspace $ws_music
 bindsym $mod+x workspace $ws_password_manager
 
-# --- Toggle to last workspace ---
-bindsym $mod+6 workspace back_and_forth
-bindsym $mod+Tab workspace back_and_forth
-
 # -------------------------------------------------------------------
 # -- Keybindings: Application Summoning (Permanent Apps)
 # -------------------------------------------------------------------
@@ -185,9 +181,14 @@ bindsym $mod+Mod1+5 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_
 # Dismiss all summoned windows back to their home slots
 bindsym $mod+Escape exec --no-startup-id ~/.dotfiles/i3/dismiss-summoned.sh
 
-# --- 3. Send to Workspace/Slot (Prefix Key) ---
-# Defines a mode for sending windows. The mode name "send" is simple and robust.
-mode "send" {
+# --- 3. Stack Management (Note: cycling 5 slots may feel less useful) ---
+# Cycle the contents of all 5 slots
+bindsym $mod+Tab exec --no-startup-id ~/.dotfiles/i3/cycle-slots.sh forward
+bindsym $mod+Shift+Tab exec --no-startup-id ~/.dotfiles/i3/cycle-slots.sh backward
+
+# --- 4. Send to Workspace/Slot (Prefix Key) ---
+set $mode_send "⮞ Send to: [t,b,g..] or [1-5]"
+mode "$mode_send" {
     # Send to permanent workspaces
     bindsym t move container to workspace $ws_terminal, mode "default"
     bindsym b move container to workspace $ws_browser_main, mode "default"
@@ -212,7 +213,7 @@ mode "send" {
     bindsym Return mode "default"
     bindsym Escape mode "default"
 }
-bindsym $mod+grave mode "send"
+bindsym $mod+grave mode "$mode_send"
 
 # -------------------------------------------------------------------
 # -- Window Rules & Other Settings
