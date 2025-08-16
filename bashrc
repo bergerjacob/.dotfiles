@@ -153,3 +153,4 @@ if [ -f '/home/bergerj/google-cloud-sdk/path.bash.inc' ]; then . '/home/bergerj/
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/bergerj/google-cloud-sdk/completion.bash.inc' ]; then . '/home/bergerj/google-cloud-sdk/completion.bash.inc'; fi
+source ~/google-cloud-sdk/path.bash.inc
