@@ -20,6 +20,9 @@ if [ ${#WINDOW_IDS[@]} -eq 0 ]; then
     exit 0
 fi
 
+# Get the last window ID to focus it after summoning.
+LAST_ID=${WINDOW_IDS[-1]}
+
 # Prepare the i3-msg command string.
 COMMAND=""
 for id in "${WINDOW_IDS[@]}"; do
@@ -33,6 +36,9 @@ if [ "$SUMMON_MODE" = "floating" ]; then
         COMMAND+="[con_id=$id] floating enable, resize set 80 ppt 80 ppt, move position center; "
     done
 fi
+
+# Append the focus command for the last window.
+COMMAND+="[con_id=$LAST_ID] focus"
 
 # Execute the command batch.
 i3-msg "$COMMAND"

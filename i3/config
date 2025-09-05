@@ -51,6 +51,9 @@ bindsym $mod+Shift+j move down
 bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
+# Toggle floating state for a window
+bindsym $mod+comma floating toggle
+
 # -------------------------------------------------------------------
 # -- Workspace and monitor assignments
 # -------------------------------------------------------------------
@@ -108,45 +111,34 @@ bindsym $mod+Tab workspace back_and_forth
 # -------------------------------------------------------------------
 # -- Keybindings: Application Summoning (Permanent Apps)
 # -------------------------------------------------------------------
-# Usage: $mod+Shift+<key> summons tiled, $mod+Alt+<key> summons floating
+# Usage: $mod+Shift+<key> summons tiled
 
 # --- Terminal ---
 bindsym $mod+Shift+t exec --no-startup-id ~/.dotfiles/i3/summon.sh class Alacritty tiled_right
-bindsym $mod+Mod1+t exec --no-startup-id ~/.dotfiles/i3/summon.sh class Alacritty floating
 
 # --- Browsers ---
 bindsym $mod+Shift+b exec --no-startup-id ~/.dotfiles/i3/summon.sh class Chrome-main tiled_right
-bindsym $mod+Mod1+b exec --no-startup-id ~/.dotfiles/i3/summon.sh class Chrome-main floating
 bindsym $mod+Shift+g exec --no-startup-id ~/.dotfiles/i3/summon.sh class Chrome-orst tiled_right
-bindsym $mod+Mod1+g exec --no-startup-id ~/.dotfiles/i3/summon.sh class Chrome-orst floating
 bindsym $mod+Shift+z exec --no-startup-id ~/.dotfiles/i3/summon.sh class Chrome-personal tiled_right
-bindsym $mod+Mod1+z exec --no-startup-id ~/.dotfiles/i3/summon.sh class Chrome-personal floating
 
 # --- Discords (using marks) ---
 bindsym $mod+Shift+e exec --no-startup-id ~/.dotfiles/i3/summon.sh mark discord_personal tiled_right
-bindsym $mod+Mod1+e exec --no-startup-id ~/.dotfiles/i3/summon.sh mark discord_personal floating
 bindsym $mod+Shift+r exec --no-startup-id ~/.dotfiles/i3/summon.sh mark discord_professional tiled_right
-bindsym $mod+Mod1+r exec --no-startup-id ~/.dotfiles/i3/summon.sh mark discord_professional floating
 
 # --- Teams (PWA - uses instance) ---
 bindsym $mod+Shift+w exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_cifhbcnohmdccbgoicgdjpfamggdegmo tiled_right
-bindsym $mod+Mod1+w exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_cifhbcnohmdccbgoicgdjpfamggdegmo floating
 
 # --- Email (Thunderbird - uses class) ---
 bindsym $mod+Shift+q exec --no-startup-id ~/.dotfiles/i3/summon.sh class thunderbird-default tiled_right
-bindsym $mod+Mod1+q exec --no-startup-id ~/.dotfiles/i3/summon.sh class thunderbird-default floating
 
 # --- Calendar (PWA - uses instance) ---
 bindsym $mod+Shift+s exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_kjbdgfilnfhdoflbpgamdcdgpehopbep tiled_right
-bindsym $mod+Mod1+s exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_kjbdgfilnfhdoflbpgamdcdgpehopbep floating
 
 # --- Music (Spotify - uses class) ---
 bindsym $mod+Shift+a exec --no-startup-id ~/.dotfiles/i3/summon.sh class Spotify tiled_right
-bindsym $mod+Mod1+a exec --no-startup-id ~/.dotfiles/i3/summon.sh class Spotify floating
 
 # --- Password Manager (PWA - uses instance) ---
 bindsym $mod+Shift+x exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_kajebgjangihfbkjfejcanhanjmmbcfd tiled_right
-bindsym $mod+Mod1+x exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_kajebgjangihfbkjfejcanhanjmmbcfd floating
 
 
 # -------------------------------------------------------------------
@@ -176,43 +168,31 @@ bindsym $mod+Shift+3 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot
 bindsym $mod+Shift+4 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_4 tiled
 bindsym $mod+Shift+5 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_5 tiled
 
-bindsym $mod+Mod1+1 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_1 floating
-bindsym $mod+Mod1+2 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_2 floating
-bindsym $mod+Mod1+3 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_3 floating
-bindsym $mod+Mod1+4 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_4 floating
-bindsym $mod+Mod1+5 exec --no-startup-id ~/.dotfiles/i3/summon-slot.sh $ws_slot_5 floating
-
 # Dismiss all summoned windows back to their home slots
 bindsym $mod+Escape exec --no-startup-id ~/.dotfiles/i3/reset-workspace.sh
 
-# --- 3. Send to Workspace/Slot (Prefix Key) ---
-# Defines a mode for sending windows. The mode name "send" is simple and robust.
-mode "send" {
-    # Send to permanent workspaces
-    bindsym t move container to workspace $ws_terminal, mode "default"
-    bindsym b move container to workspace $ws_browser_main, mode "default"
-    bindsym g move container to workspace $ws_browser_orst, mode "default"
-    bindsym z move container to workspace $ws_browser_personal, mode "default"
-    bindsym e move container to workspace $ws_discord_personal, mode "default"
-    bindsym r move container to workspace $ws_discord_professional, mode "default"
-    bindsym w move container to workspace $ws_teams, mode "default"
-    bindsym q move container to workspace $ws_email, mode "default"
-    bindsym s move container to workspace $ws_calendar, mode "default"
-    bindsym a move container to workspace $ws_music, mode "default"
-    bindsym x move container to workspace $ws_password_manager, mode "default"
+# -------------------------------------------------------------------
+# -- Keybindings: Send Window to Workspace
+# -------------------------------------------------------------------
+# Send to permanent workspaces
+bindsym $mod+Mod1+t move container to workspace $ws_terminal
+bindsym $mod+Mod1+b move container to workspace $ws_browser_main
+bindsym $mod+Mod1+g move container to workspace $ws_browser_orst
+bindsym $mod+Mod1+z move container to workspace $ws_browser_personal
+bindsym $mod+Mod1+e move container to workspace $ws_discord_personal
+bindsym $mod+Mod1+r move container to workspace $ws_discord_professional
+bindsym $mod+Mod1+w move container to workspace $ws_teams
+bindsym $mod+Mod1+q move container to workspace $ws_email
+bindsym $mod+Mod1+s move container to workspace $ws_calendar
+bindsym $mod+Mod1+a move container to workspace $ws_music
+bindsym $mod+Mod1+x move container to workspace $ws_password_manager
 
-    # Send to temporary slots
-    bindsym 1 move container to workspace number $ws_slot_1, mode "default"
-    bindsym 2 move container to workspace number $ws_slot_2, mode "default"
-    bindsym 3 move container to workspace number $ws_slot_3, mode "default"
-    bindsym 4 move container to workspace number $ws_slot_4, mode "default"
-    bindsym 5 move container to workspace number $ws_slot_5, mode "default"
-
-    # Back to default mode
-    bindsym Return mode "default"
-    bindsym Escape mode "default"
-}
-bindsym $mod+grave mode "send"
+# Send to temporary slots
+bindsym $mod+Mod1+1 move container to workspace number $ws_slot_1
+bindsym $mod+Mod1+2 move container to workspace number $ws_slot_2
+bindsym $mod+Mod1+3 move container to workspace number $ws_slot_3
+bindsym $mod+Mod1+4 move container to workspace number $ws_slot_4
+bindsym $mod+Mod1+5 move container to workspace number $ws_slot_5
 
 # -------------------------------------------------------------------
 # -- Window Rules & Other Settings
