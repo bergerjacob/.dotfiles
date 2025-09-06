@@ -134,8 +134,8 @@ bindsym $mod+Shift+q exec --no-startup-id ~/.dotfiles/i3/summon.sh class thunder
 # --- Calendar (PWA - uses instance) ---
 bindsym $mod+Shift+s exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_kjbdgfilnfhdoflbpgamdcdgpehopbep tiled_right
 
-# --- Music (Spotify - uses class) ---
-bindsym $mod+Shift+a exec --no-startup-id ~/.dotfiles/i3/summon.sh class Spotify tiled_right
+# --- Music (YouTube Music - uses instance) ---
+bindsym $mod+Shift+a exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_cinhimbnkkaeohfgghhklpknlkffjgod tiled_right
 
 # --- Password Manager (PWA - uses instance) ---
 bindsym $mod+Shift+x exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_kajebgjangihfbkjfejcanhanjmmbcfd tiled_right
@@ -204,13 +204,13 @@ assign [class="(?i)Alacritty"] $ws_terminal
 assign [class="(?i)Chrome-main"] $ws_browser_main
 assign [class="(?i)Chrome-orst"] $ws_browser_orst
 assign [class="(?i)Chrome-personal"] $ws_browser_personal
-assign [class="(?i)Spotify"] $ws_music
 assign [class="(?i)thunderbird-default"] $ws_email
 
 # -- PWAs (by instance for clarity and precision) --
 assign [instance="(?i)crx_cifhbcnohmdccbgoicgdjpfamggdegmo"] $ws_teams
 assign [instance="(?i)crx_kjbdgfilnfhdoflbpgamdcdgpehopbep"] $ws_calendar
 assign [instance="(?i)crx_kajebgjangihfbkjfejcanhanjmmbcfd"] $ws_password_manager
+assign [instance="(?i)crx_cinhimbnkkaeohfgghhklpknlkffjgod"] $ws_music
 
 # -- Discord Initial Assignment --
 assign [class="(?i)discord"] $ws_discord_personal
