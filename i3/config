@@ -147,11 +147,11 @@ bindsym $mod+Shift+x exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_
 # Workspaces 13-17 are used as five temporary slots, mapped to keys 1-5.
 
 # Define variables for the slots
-set $ws_slot_1 "13"
-set $ws_slot_2 "14"
-set $ws_slot_3 "15"
-set $ws_slot_4 "16"
-set $ws_slot_5 "17"
+set $ws_slot_1 "13:1"
+set $ws_slot_2 "14:2"
+set $ws_slot_3 "15:3"
+set $ws_slot_4 "16:4"
+set $ws_slot_5 "17:5"
 
 # --- 1. Core Navigation: Go to Slot ---
 bindsym $mod+1 workspace number $ws_slot_1
@@ -193,6 +193,13 @@ bindsym $mod+Mod1+2 move container to workspace number $ws_slot_2
 bindsym $mod+Mod1+3 move container to workspace number $ws_slot_3
 bindsym $mod+Mod1+4 move container to workspace number $ws_slot_4
 bindsym $mod+Mod1+5 move container to workspace number $ws_slot_5
+
+# -------------------------------------------------------------------
+# -- Keybindings: Move Workspace Between Monitors
+# -------------------------------------------------------------------
+# Move the currently focused workspace to the next monitor
+bindsym $mod+Shift+p move workspace to output right
+bindsym $mod+Shift+n move workspace to output left
 
 # -------------------------------------------------------------------
 # -- Window Rules & Other Settings
