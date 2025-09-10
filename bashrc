@@ -154,3 +154,10 @@ if [ -f '/home/bergerj/google-cloud-sdk/path.bash.inc' ]; then . '/home/bergerj/
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/bergerj/google-cloud-sdk/completion.bash.inc' ]; then . '/home/bergerj/google-cloud-sdk/completion.bash.inc'; fi
 source ~/google-cloud-sdk/path.bash.inc
+
+
+# pyenv configuration
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+eval "$(pyenv virtualenv-init -)"
