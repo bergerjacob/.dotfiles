@@ -82,5 +82,5 @@ for node in "${window_nodes[@]}"; do
     fi
 done
 
-i3-msg '[workspace="__focused__"]' floating disable >> "/home/bergerj/debug.log"
-i3-msg "layout default" >> "/home/bergerj/debug.log"
+i3-msg '[workspace="__focused__"]' floating disable
+i3-msg "layout default"
