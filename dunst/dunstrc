@@ -1,5 +1,111 @@
-[[rules]]
-    appname = "bluetoothd"
-    summary = ".*"
-    ignore = true
+# Sleek, Minimal, Dark Dunst Configuration
+#
+# Theme inspired by the Dracula color palette.
+# Location: ~/.config/dunst/dunstrc
 
+[global]
+    ### Display ###
+    # The monitor on which to display notifications. 0 is the first, 1 the second, etc.
+    # You can also use "mouse" to display notifications on the monitor with the mouse.
+    # Replace "DP-0" with your monitor's name if you know it, otherwise 0 should work.
+    monitor = "DP-0"
+
+    # The geometry of the notification window.
+    # format: "{width}x{height}[+/-{x}[+/-{y}]]"
+    # width:  width of the notification
+    # height: height of the notification
+    # x/y:    offset from the origin
+    # Negative values are offsets from the right/bottom edge.
+    geometry = "350x5-30+50"
+
+    # Where to place notifications on the screen.
+    # Options: "top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right"
+    origin = top-right
+
+    ### Text & Font ###
+    # The font or font set to use.
+    # It's recommended to use a good programming font like JetBrains Mono, Fira Code, or Iosevka.
+    font = Monospace 10
+
+    # The format of the message.
+    # %a  appname
+    # %s  summary
+    # %b  body
+    # %I  icon path
+    # %p  progress value
+    # %n  notification ID
+    # Markup is enabled by default, so you can use tags like <b>, <i>, <u>.
+    format = "<b>%s</b>\n%b"
+
+    # Alignment of message text.
+    # Options: "left", "center", "right"
+    alignment = left
+    
+    # Vertical alignment of message text.
+    # Options: "top", "center", "bottom"
+    vertical_alignment = center
+
+    ### Appearance ###
+    # The width of the frame around the notification window.
+    frame_width = 1
+
+    # The size of the padding between the notification and the frame.
+    padding = 8
+    horizontal_padding = 10
+
+    # Separator height. A value of 0 means no separator.
+    separator_height = 0
+    
+    # A subtle transparency. Requires a compositor (like picom).
+    # This sets the window opacity. 0 is fully transparent, 100 is fully opaque.
+    opacity = 95
+    
+    ### Behavior ###
+    # Don't show notifications if the user is idle (no mouse or keyboard activity) for this many seconds.
+    # Set to 0 to disable.
+    idle_threshold = 120
+
+    # Sort notifications by urgency, then time.
+    sort = yes
+
+    # Don't strip notification markup.
+    markup = full
+
+    ### Icons ###
+    # By default, icons are turned off for a more minimal look.
+    # You can enable them by setting `icon_position` to "left" or "right".
+    icon_position = off
+    max_icon_size = 64
+
+[frame]
+    # The frame color and width.
+    # These are the defaults, which will be overridden in the urgency sections.
+    color = "#44475A"
+    width = 1
+
+# --- Urgency Sections ---
+# These sections define the colors and behavior for different notification priorities.
+# The frame color changes based on urgency.
+
+[urgency_low]
+    # A low urgency notification (e.g., music player track change)
+    background = "#282A36"
+    foreground = "#F8F8F2"
+    frame_color = "#6272A4" # Blue
+    timeout = 3
+
+[urgency_normal]
+    # A normal urgency notification (e.g., new email)
+    background = "#282A36"
+    foreground = "#F8F8F2"
+    frame_color = "#44475A" # Gray
+    timeout = 6
+
+[urgency_critical]
+    # A critical urgency notification (e.g., low battery)
+    background = "#282A36"
+    foreground = "#F8F8F2"
+    frame_color = "#FF5555" # Red
+    # A timeout of 0 means the notification stays until you manually dismiss it
+    # (usually middle-click or a keybinding you set up).
+    timeout = 0
