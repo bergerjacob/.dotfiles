@@ -5,7 +5,7 @@ x-scheme-handler/https=copy-url.desktop
 x-scheme-handler/about=google-chrome.desktop
 x-scheme-handler/unknown=google-chrome.desktop
 x-scheme-handler/webcal=google-chrome.desktop
-x-scheme-handler/mailto=userapp-Thunderbird-Z4RZ92.desktop
+x-scheme-handler/mailto=google-chrome.desktop
 message/rfc822=userapp-Thunderbird-Z4RZ92.desktop
 x-scheme-handler/mid=userapp-Thunderbird-Z4RZ92.desktop
 

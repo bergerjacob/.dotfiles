@@ -1,3 +1,6 @@
 export XCURSOR_THEME=Adwaita
 export XCURSOR_SIZE=16
 
+# Start the GNOME Keyring daemon
+eval $(gnome-keyring-daemon --start)
+export SSH_AUTH_SOCK
