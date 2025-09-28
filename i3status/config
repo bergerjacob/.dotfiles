@@ -11,27 +11,15 @@ general {
         interval = 5
 }
 
-order += "ipv6"
-order += "wireless _first_"
 order += "ethernet _first_"
-order += "battery all"
 order += "disk /"
 order += "load"
 order += "memory"
 order += "tztime local"
 
-wireless _first_ {
-        format_up = "W: (%quality at %essid) %ip"
-        format_down = "W: down"
-}
-
 ethernet _first_ {
         format_up = "E: %ip (%speed)"
         format_down = "E: down"
-}
-
-battery all {
-        format = "%status %percentage %remaining"
 }
 
 disk "/" {
@@ -40,12 +28,13 @@ disk "/" {
 
 load {
         format = "%1min"
+        max_threshold = "12.0"
 }
 
 memory {
-        format = "%used | %available"
-        threshold_degraded = "1G"
-        format_degraded = "MEMORY < %available"
+        format = "%used / %total (%percentage_used)"
+        threshold_degraded = "10%"
+        threshold_critical = "5%"
 }
 
 tztime local {
