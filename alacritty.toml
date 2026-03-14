@@ -7,3 +7,9 @@ decorations_theme_variant = "Dark"
 
 [terminal]
 shell = { program = "/home/bergerj/.dotfiles/startup.sh", args = [] }
+
+[keyboard]
+bindings = [ 
+    { key = "Return", mods = "Shift", chars = "\n" },
+    { key = "Back", mods = "Control", chars = "\u0017" }
+]

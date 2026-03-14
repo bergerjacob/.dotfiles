@@ -127,12 +127,12 @@ fi
 
 
 export PATH="$HOME/Apps:$PATH"
-alias cursor="$HOME/Apps/cursor.appimage"
 
 alias python="python3"
 alias pip="pip3"
 alias fd='fdfind'
 
+export PATH="$PATH:/home/bergerj/.local/bin"
 export PATH="$PATH:$HOME/scripts"
 export PATH="$PATH:/usr/local/MATLAB/R2024b/bin"
 export PATH="/home/bergerj/Scripts:$PATH"
@@ -164,3 +164,25 @@ eval "$(pyenv virtualenv-init -)"
 
 export PATH="$HOME/.rbenv/bin:$PATH"
 eval "$(rbenv init -)"
+
+# Copy to ssh'd connection clipboard
+copy() {
+  local input
+  # Check if using pipe or arguments
+  if [ -t 0 ]; then
+    input="$*" # Arguments
+  else
+    input=$(cat) # Pipe
+  fi
+
+  # Base64 encode the input
+  local encoded=$(echo -n "$input" | base64 | tr -d '\n')
+  
+  # Send OSC 52 sequence
+  # \033]52;c; -> Start OSC 52 clipboard
+  # \007       -> End sequence (BEL)
+  printf "\033]52;c;%s\007" "$encoded"
+}
+
+# opencode
+export PATH=/home/bergerj/.opencode/bin:$PATH
