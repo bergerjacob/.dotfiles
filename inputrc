@@ -1,0 +1,10 @@
+# Turn on vi editing mode
+set editing-mode vi
+
+# Show whether you are in insert or normal mode
+set show-mode-in-prompt on
+
+# Optional: Make the mode indicators look like standard Vim (e.g., plus or colon)
+# Or you can customize the string to be more obvious, like [INS] and [CMD]
+set vi-ins-mode-string "\1\e[32m\2[I]\1\e[0m\2 "
+set vi-cmd-mode-string "\1\e[31m\2[N]\1\e[0m\2 "
