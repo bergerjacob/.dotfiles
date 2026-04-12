@@ -78,6 +78,7 @@ return {
 				filetypes = { "json", "jsonc", "jsonl" },
 			},
 			ts_ls = {},
+			clangd = {},
 		}
 
 		require("mason").setup()
