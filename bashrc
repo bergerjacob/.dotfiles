@@ -144,7 +144,7 @@ export EDITOR="$VISUAL"
 bind -r '\C-p'
 bind -r '\C-n'
 
-set -o vi
+# set -o vi
 
 # Make cursor visible in Sway
 export WLR_NO_HARDWARE_CURSORS=1

@@ -254,6 +254,8 @@ focus_follows_mouse no
 mouse_warping none
 
 bindsym $mod+Control+s exec --no-startup-id ~/Scripts/screenshot
+bindsym $mod+Control+c exec --no-startup-id ~/Scripts/screenshot-path
+
 bindsym $mod+Control+o exec --no-startup-id ~/Scripts/ocr-screenshot
 bindsym $mod+Control+p exec --no-startup-id ~/Scripts/type-from-clipboard
 
