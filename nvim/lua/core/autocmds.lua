@@ -64,6 +64,17 @@ vim.api.nvim_create_autocmd("FileType", {
 -- Remove 'r' and 'o' flags from formatoptions
 vim.cmd [[autocmd FileType * setlocal formatoptions-=r formatoptions-=o]]
 
+-- Force consistent indentation for C/C++ files
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "c", "cpp" },
+	callback = function()
+		vim.opt_local.expandtab = true
+		vim.opt_local.tabstop = 4
+		vim.opt_local.softtabstop = 4
+		vim.opt_local.shiftwidth = 4
+	end,
+})
+
 
 
 -- Create a variable to track the toggle state
