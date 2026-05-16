@@ -145,6 +145,7 @@ bind -r '\C-p'
 bind -r '\C-n'
 
 # set -o vi
+set -o emacs
 
 # Make cursor visible in Sway
 export WLR_NO_HARDWARE_CURSORS=1
