@@ -55,10 +55,10 @@
 					actions.new()
 				end, { buffer = true, desc = "[obsidian] New note" })
 
-				-- New note from template
-				vim.keymap.set("n", "<leader>ot", function()
-					actions.new_from_template()
-				end, { buffer = true, desc = "[obsidian] New from template" })
+			-- New note from template
+			vim.keymap.set("n", "<leader>oN", function()
+				actions.new_from_template()
+			end, { buffer = true, desc = "[obsidian] New from template" })
 
 				-- Link visual selection to existing note
 				vim.keymap.set("v", "<leader>ol", function()
@@ -88,8 +88,6 @@
 
 	-- Global keymaps (work anywhere, not just in note buffers)
 	keys = {
-		{ "<leader>of", "<cmd>Obsidian quick_switch<cr>", desc = "[obsidian] Quick switch note" },
-		{ "<leader>os", "<cmd>Obsidian search<cr>", desc = "[obsidian] Search notes" },
 		{ "<leader>ob", "<cmd>Obsidian backlinks<cr>", desc = "[obsidian] Backlinks" },
 		{ "<leader>od", "<cmd>Obsidian today<cr>", desc = "[obsidian] Today's daily note" },
 		{ "<leader>oj", "<cmd>Obsidian dailies<cr>", desc = "[obsidian] Daily notes list" },

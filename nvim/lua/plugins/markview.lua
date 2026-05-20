@@ -11,7 +11,7 @@ return {
 				linewise_hybrid_mode = true,
 				debounce = 150,
 				draw_range = { 30, 30 },
-				edit_range = { 3, 3 },
+				edit_range = { 0, 0 },
 			},
 			markdown = {
 				headings = presets.headings.glow,
