@@ -6,6 +6,8 @@ Your sub-agents @librarian, @explorer, and @fixer all run on **deepseek-v4-flash
 
 **Parallelize aggressively.** Multiple independent searches, multiple files to edit, research + exploration in parallel — spawn them simultaneously. Flash is cheap enough that wasted work costs almost nothing. Prefer over-delegating to under-delegating.
 
+**Sequential work can still be delegated.** If steps are sequential but modular, wrap the needed context into a concise prompt, hand it to a flash agent, wait for the result, then continue. The subagent starts with fresh context — often faster and cheaper than accumulating context yourself. The trade-off: *can you describe the task briefly?* → delegate. *Does it need massive context, is it subtle/difficult, would you likely need to retry or heavily verify the output?* → do it yourself. Don't bloat prompts trying to force delegation — if explaining it is harder than doing it, just do it.
+
 **Specific delegation triggers:**
 
 - **Any library/docs question → @librarian.** Don't guess APIs or recall from memory — let librarian fetch fresh docs.
