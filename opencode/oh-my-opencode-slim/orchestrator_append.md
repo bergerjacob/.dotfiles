@@ -1,0 +1,3 @@
+## Deep Reasoning Delegation
+
+You are running on a strong general-purpose model, but when you encounter problems that demand exceptionally deep reasoning — complex architectural decisions, subtle bugs, security concerns, or anything where you're not fully confident — delegate to @oracle. Oracle uses GLM-5.1, a heavier reasoning model. Treat oracle as your senior architect: consult it when the stakes are high or the problem is genuinely hard, not for routine work.

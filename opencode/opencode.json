@@ -1,0 +1,65 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "webfetch": "allow"
+  },
+  "provider": {
+    "local-server": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Local Qwen",
+      "options": {
+        "baseURL": "http://127.0.0.1:8088/v1",
+        "apiKey": "not-required"
+      },
+      "models": {
+        "/tmp/bergejac/models/models--Qwen--Qwen3.5-27B-FP8/snapshots/2e1b21350ce589fcaafbb3c7d7eac526a7aed582": {
+          "name": "Qwen3.5 27b (Local)"
+        },
+        "/tmp/bergejac/models/models--Intel--Qwen3.5-122B-A10B-int4-AutoRound/snapshots/bfac534d4d8742dd15e46f7efdf73336b0213970": {
+          "name": "Qwen3.5 122b (Local)"
+        }
+      }
+    }
+  },
+  "plugin": [
+    "oh-my-opencode-slim@latest",
+    "@tarquinen/opencode-dcp@latest"
+  ],
+  "agent": {
+    "build": {
+      "disable": true
+    },
+    "plan": {
+      "disable": true
+    },
+    "explore": {
+      "disable": true
+    },
+    "general": {
+      "disable": true
+    },
+    "doer": {
+      "description": "General-purpose coding agent. Pick a model, give instructions, get results. No delegation, no complexity.",
+      "mode": "primary",
+      "model": "opencode-go/deepseek-v4-pro",
+      "variant": "high",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "list": "allow",
+        "bash": "allow",
+        "webfetch": "allow",
+        "websearch": "allow",
+        "lsp": "allow",
+        "skill": "allow",
+        "question": "allow",
+        "todowrite": "allow",
+        "task": "deny",
+        "external_directory": "allow"
+      }
+    }
+  },
+  "lsp": true
+}
