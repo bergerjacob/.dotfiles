@@ -131,6 +131,7 @@ export PATH="$HOME/Apps:$PATH"
 alias python="python3"
 alias pip="pip3"
 alias fd='fdfind'
+alias drag='ripdrag'
 
 export PATH="$PATH:/home/bergerj/.local/bin"
 export PATH="$PATH:$HOME/scripts"
@@ -189,3 +190,7 @@ copy() {
 
 # opencode
 export PATH=/home/bergerj/.opencode/bin:$PATH
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
