@@ -4,26 +4,8 @@
   "presets": {
     "openai": {
       "orchestrator": {
-        "model": "openai/gpt-5.5",
-        "skills": [
-          "*"
-        ],
-        "mcps": [
-          "*",
-          "!context7"
-        ]
-      },
-      "oracle": {
-        "model": "openai/gpt-5.5",
-        "variant": "high",
-        "skills": [
-          "simplify"
-        ],
-        "mcps": []
-      },
-      "librarian": {
-        "model": "openai/gpt-5.4-mini",
-        "variant": "low",
+        "model": "opencode-go/deepseek-v4-pro",
+        "variant": "default",
         "skills": [],
         "mcps": [
           "websearch",
@@ -55,7 +37,7 @@
     "opencode-go": {
       "orchestrator": {
         "model": "opencode-go/deepseek-v4-pro",
-        "variant": "default",
+        "variant": "none",
         "skills": [
           "*"
         ],
@@ -72,8 +54,7 @@
         "mcps": []
       },
       "council": {
-        "model": "opencode-go/deepseek-v4-pro",
-        "variant": "high",
+        "model": "opencode-go/kimi-k2.6",
         "skills": [],
         "mcps": []
       },

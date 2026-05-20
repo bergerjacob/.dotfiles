@@ -40,9 +40,7 @@
     },
     "doer": {
       "description": "General-purpose coding agent. Pick a model, give instructions, get results. No delegation, no complexity.",
-      "mode": "primary",
       "model": "opencode-go/deepseek-v4-pro",
-      "variant": "high",
       "permission": {
         "read": "allow",
         "edit": "allow",
