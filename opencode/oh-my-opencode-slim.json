@@ -55,7 +55,7 @@
     "opencode-go": {
       "orchestrator": {
         "model": "opencode-go/deepseek-v4-pro",
-        "variant": "high",
+        "variant": "default",
         "skills": [
           "*"
         ],
@@ -78,7 +78,7 @@
         "mcps": []
       },
       "librarian": {
-        "model": "opencode-go/minimax-m2.7",
+        "model": "opencode-go/deepseek-v4-flash",
         "skills": [],
         "mcps": [
           "websearch",
@@ -87,7 +87,7 @@
         ]
       },
       "explorer": {
-        "model": "opencode-go/minimax-m2.7",
+        "model": "opencode-go/deepseek-v4-flash",
         "skills": [],
         "mcps": []
       },
