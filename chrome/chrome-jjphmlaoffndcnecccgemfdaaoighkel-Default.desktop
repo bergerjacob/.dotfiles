@@ -4,6 +4,6 @@ Version=1.0
 Terminal=false
 Type=Application
 Name=Floating for YouTube™
-Exec=/opt/google/chrome/google-chrome "--user-data-dir=/home/bergerj/.config/chrome-profiles/personal" --profile-directory=Default --app-id=jjphmlaoffndcnecccgemfdaaoighkel
+Exec=/opt/google/chrome/google-chrome "--user-data-dir=/home/bergerj/.config/chrome-profiles/personal" --profile-directory=Default --app-id=jjphmlaoffndcnecccgemfdaaoighkel --enable-features=UseOzonePlatform --ozone-platform-hint=wayland --disable-gpu
 Icon=chrome-jjphmlaoffndcnecccgemfdaaoighkel-Default
 StartupWMClass=crx_jjphmlaoffndcnecccgemfdaaoighkel

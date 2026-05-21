@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Chrome - Personal
-Exec=google-chrome-stable --user-data-dir=/home/bergerj/.config/chrome-profiles/personal --class="Chrome-personal"
+Exec=google-chrome-stable --user-data-dir=/home/bergerj/.config/chrome-profiles/personal --class="Chrome-personal" --enable-features=UseOzonePlatform --ozone-platform-hint=wayland --disable-gpu
 Icon=google-chrome
 Type=Application
 Categories=Network;WebBrowser;

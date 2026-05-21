@@ -4,6 +4,6 @@ Version=1.0
 Terminal=false
 Type=Application
 Name=Google Calendar
-Exec=/opt/google/chrome/google-chrome "--user-data-dir=/home/bergerj/.config/chrome-profiles/main" --profile-directory=Default --app-id=kjbdgfilnfhdoflbpgamdcdgpehopbep
+Exec=/opt/google/chrome/google-chrome "--user-data-dir=/home/bergerj/.config/chrome-profiles/main" --profile-directory=Default --app-id=kjbdgfilnfhdoflbpgamdcdgpehopbep --enable-features=UseOzonePlatform --ozone-platform-hint=wayland --disable-gpu
 Icon=chrome-kjbdgfilnfhdoflbpgamdcdgpehopbep-Default
 StartupWMClass=crx_kjbdgfilnfhdoflbpgamdcdgpehopbep
