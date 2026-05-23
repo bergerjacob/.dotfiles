@@ -7,8 +7,8 @@
     ### Display ###
     # The monitor on which to display notifications. 0 is the first, 1 the second, etc.
     # You can also use "mouse" to display notifications on the monitor with the mouse.
-    # Replace "DP-0" with your monitor's name if you know it, otherwise 0 should work.
-    monitor = "DP-0"
+    # Replace "DP-4" with your monitor's name if you know it, otherwise 0 should work.
+    monitor = "DP-4"
 
     # The geometry of the notification window.
     # format: "{width}x{height}[+/-{x}[+/-{y}]]"

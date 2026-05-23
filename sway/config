@@ -236,3 +236,23 @@ bar {
     status_command i3status
     strip_workspace_numbers yes
 }
+
+# --- Zoom Window Fixes ---
+
+# Float the annotation toolbar
+for_window [class="[Zz]oom" title="annotate_toolbar"] floating enable
+for_window [app_id="[Zz]oom" title="annotate_toolbar"] floating enable
+
+# Float the screen-sharing toolbar
+for_window [class="[Zz]oom" title="as_toolbar"] floating enable
+for_window [app_id="[Zz]oom" title="as_toolbar"] floating enable
+
+# Float smaller pop-ups and settings menus
+for_window [class="[Zz]oom" title="^zoom$"] border none, floating enable
+for_window [app_id="[Zz]oom" title="^zoom$"] border none, floating enable
+for_window [class="[Zz]oom" title="Settings"] floating enable
+for_window [app_id="[Zz]oom" title="Settings"] floating enable
+
+# (Optional) Float the initial meeting join splash screen
+for_window [class="[Zz]oom" title="Zoom - Free Account"] floating enable
+for_window [app_id="[Zz]oom" title="Zoom - Free Account"] floating enable
