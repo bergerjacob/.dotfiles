@@ -233,6 +233,7 @@ bindsym $mod+Control+p exec --no-startup-id ~/Scripts/type-from-clipboard
 
 # Start swaybar to display a workspace bar
 bar {
+    font pango:Hack Nerd Font Mono 10
     status_command i3status
     strip_workspace_numbers yes
 }
