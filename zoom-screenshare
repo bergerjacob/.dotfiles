@@ -1,0 +1,31 @@
+#!/bin/bash
+# zoom-screenshare: Launch Zoom for screen sharing via OBS Virtual Camera
+# Hides the Fullhan webcam so Zoom can't get confused
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Ensure proper Wayland environment is set
+export XDG_CURRENT_DESKTOP=sway
+export XDG_SESSION_TYPE=wayland
+
+# Hide Fullhan webcam
+echo "Preparing for screen sharing..."
+"$SCRIPT_DIR/camera-mode" screenshare
+
+# Launch Zoom
+/usr/bin/zoom "$@" &
+ZOOM_PID=$!
+
+echo "Zoom launched (PID: $ZOOM_PID)"
+echo "When done, close Zoom to restore webcam."
+echo ""
+
+# Wait for Zoom to close
+wait $ZOOM_PID 2>/dev/null || true
+
+# Restore webcam
+echo ""
+echo "Restoring webcam..."
+"$SCRIPT_DIR/camera-mode" webcam

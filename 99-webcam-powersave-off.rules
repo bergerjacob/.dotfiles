@@ -1,0 +1,6 @@
+# Fullhan webcam - disable USB autosuspend and ensure device stays awake
+# Handles add, change, and bind events (suspend/resume re-enumeration)
+ACTION=="add|change|bind", SUBSYSTEM=="usb", ATTR{idVendor}=="1d6c", ATTR{idProduct}=="0103", ATTR{power/control}="on", ATTR{power/autosuspend}="-1"
+
+# Also ensure the video interfaces get proper permissions
+ACTION=="add", SUBSYSTEM=="video4linux", ATTRS{idVendor}=="1d6c", ATTRS{idProduct}=="0103", SYMLINK+="webcam-fullhan", MODE="0666"

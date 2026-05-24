@@ -1,0 +1,155 @@
+#!/bin/bash
+# camera-mode: Toggle between webcam-only and screenshare-only modes
+# This prevents the Fullhan camera from conflicting with OBS virtual camera
+#
+# Usage:
+#   camera-mode webcam      - Enable Fullhan webcam, hide virtual cam from apps
+#   camera-mode screenshare - Disable Fullhan, use only OBS virtual camera
+#   camera-mode status      - Show current state
+#   camera-mode toggle      - Switch between modes
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+FULLHAN_USB="9-1.4"
+FULLHAN_IFACE0="${FULLHAN_USB}:1.0"
+FULLHAN_IFACE1="${FULLHAN_USB}:1.1"
+V4L2LOOPBACK_DEV="/dev/video10"
+
+# Auto-detect Fullhan USB path if not at expected location
+find_fullhan() {
+    for dev in /sys/bus/usb/devices/*/idVendor; do
+        if grep -q "1d6c" "$dev" 2>/dev/null; then
+            dirname "$dev"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Verify expected path exists, otherwise search
+if [ ! -d "/sys/bus/usb/devices/${FULLHAN_USB}" ]; then
+    FOUND=$(find_fullhan)
+    if [ -n "$FOUND" ]; then
+        FULLHAN_USB=$(basename "$FOUND")
+        FULLHAN_IFACE0="${FULLHAN_USB}:1.0"
+        FULLHAN_IFACE1="${FULLHAN_USB}:1.1"
+        echo "Auto-detected Fullhan at $FULLHAN_USB"
+    else
+        echo "ERROR: Could not find Fullhan webcam"
+        exit 1
+    fi
+fi
+
+is_fullhan_bound() {
+    [ -L "/sys/bus/usb/drivers/uvcvideo/${FULLHAN_IFACE0}" ]
+}
+
+is_virtual_cam_active() {
+    [ -c "$V4L2LOOPBACK_DEV" ] && v4l2-ctl -d "$V4L2LOOPBACK_DEV" --all 2>/dev/null | grep -q "v4l2 loopback"
+}
+
+mode_webcam() {
+    echo "Switching to WEBCAM mode (Fullhan enabled)..."
+    
+    # Ensure Fullhan is bound to uvcvideo
+    if ! is_fullhan_bound; then
+        echo "Binding Fullhan to uvcvideo driver..."
+        sudo "$SCRIPT_DIR/camera-usb-helper" "$FULLHAN_IFACE0" "$FULLHAN_IFACE1" bind
+        sleep 1
+    fi
+    
+    if is_fullhan_bound; then
+        echo "Fullhan webcam is now active at /dev/video0"
+    else
+        echo "WARNING: Failed to bind Fullhan"
+    fi
+    
+    # Note: We don't disable v4l2loopback, just let user know both may be visible
+    if is_virtual_cam_active; then
+        echo "OBS Virtual Cam is still active at $V4L2LOOPBACK_DEV"
+        echo "Tip: Stop OBS Virtual Camera if you only want the Fullhan visible"
+    fi
+}
+
+mode_screenshare() {
+    echo "Switching to SCREENSHARE mode (OBS Virtual Cam only)..."
+    
+    # Unbind Fullhan from uvcvideo to hide it from apps
+    if is_fullhan_bound; then
+        echo "Hiding Fullhan webcam from applications..."
+        sudo "$SCRIPT_DIR/camera-usb-helper" "$FULLHAN_IFACE0" "$FULLHAN_IFACE1" unbind
+        sleep 1
+    else
+        echo "Fullhan webcam already hidden"
+    fi
+    
+    if is_virtual_cam_active; then
+        echo "OBS Virtual Cam is active at $V4L2LOOPBACK_DEV"
+        echo "Zoom should now only see the virtual camera."
+    else
+        echo "WARNING: OBS Virtual Camera is NOT active!"
+        echo "Start OBS and click 'Start Virtual Camera' before opening Zoom."
+    fi
+    
+    if ! is_fullhan_bound; then
+        echo "Fullhan webcam is now hidden from applications."
+    else
+        echo "WARNING: Failed to hide Fullhan webcam"
+    fi
+}
+
+show_status() {
+    echo "=== Camera Mode Status ==="
+    echo ""
+    if is_fullhan_bound; then
+        echo "Fullhan webcam: VISIBLE (/dev/video0, /dev/video1)"
+    else
+        echo "Fullhan webcam: HIDDEN (unbound from driver)"
+    fi
+    
+    if is_virtual_cam_active; then
+        echo "OBS Virtual Cam: ACTIVE ($V4L2LOOPBACK_DEV)"
+    else
+        echo "OBS Virtual Cam: INACTIVE (start in OBS)"
+    fi
+    
+    echo ""
+    echo "Available video devices:"
+    v4l2-ctl --list-devices 2>/dev/null || echo "  (v4l2-ctl not available)"
+}
+
+case "${1:-status}" in
+    webcam|cam|fullhan)
+        mode_webcam
+        ;;
+    screenshare|share|obs|virtual)
+        mode_screenshare
+        ;;
+    status|state)
+        show_status
+        ;;
+    toggle|switch)
+        if is_fullhan_bound; then
+            mode_screenshare
+        else
+            mode_webcam
+        fi
+        ;;
+    reset|fix)
+        echo "Resetting camera state..."
+        mode_webcam
+        sleep 1
+        echo ""
+        echo "If camera is still not working, run: sudo ~/.dotfiles/reset-webcam.sh"
+        ;;
+    *)
+        echo "Usage: camera-mode [webcam|screenshare|status|toggle|reset]"
+        echo ""
+        echo "  webcam      - Enable Fullhan webcam, make it visible to apps"
+        echo "  screenshare - Hide Fullhan, use only OBS virtual camera"
+        echo "  status      - Show current camera state"
+        echo "  toggle      - Switch between webcam and screenshare mode"
+        echo "  reset       - Reset to webcam mode (fixes most issues)"
+        exit 1
+        ;;
+esac

@@ -4,6 +4,6 @@ Version=1.0
 Terminal=false
 Type=Application
 Name=Google Password Manager
-Exec=/opt/google/chrome/google-chrome "--user-data-dir=/home/bergerj/.config/chrome-profiles/main" --profile-directory=Default --app-id=kajebgjangihfbkjfejcanhanjmmbcfd --enable-features=UseOzonePlatform --ozone-platform-hint=wayland --disable-gpu
+Exec=env LIBVA_DRIVER_NAME=nvidia /opt/google/chrome/google-chrome "--user-data-dir=/home/bergerj/.config/chrome-profiles/main" --profile-directory=Default --app-id=kajebgjangihfbkjfejcanhanjmmbcfd --ozone-platform=x11 --enable-features=VaapiVideoDecoder,VaapiVideoEncoder --disable-features=UseChromeOSDirectVideoDecoder --disable-gpu-memory-buffer-video-frames
 Icon=chrome-kajebgjangihfbkjfejcanhanjmmbcfd-Default
 StartupWMClass=crx_kajebgjangihfbkjfejcanhanjmmbcfd

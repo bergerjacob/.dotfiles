@@ -1,0 +1,33 @@
+#!/bin/bash
+# camera-usb-helper: Low-level helper for binding/unbinding Fullhan webcam
+# This script is meant to be run via sudo
+
+FULLHAN_IFACE0="${1:-9-1.4:1.0}"
+FULLHAN_IFACE1="${2:-9-1.4:1.1}"
+ACTION="${3:-status}"
+
+case "$ACTION" in
+    unbind|hide)
+        echo "Unbinding $FULLHAN_IFACE0 from uvcvideo..."
+        echo "$FULLHAN_IFACE0" > /sys/bus/usb/drivers/uvcvideo/unbind 2>/dev/null || echo "Failed to unbind $FULLHAN_IFACE0"
+        echo "Unbinding $FULLHAN_IFACE1 from uvcvideo..."
+        echo "$FULLHAN_IFACE1" > /sys/bus/usb/drivers/uvcvideo/unbind 2>/dev/null || echo "Failed to unbind $FULLHAN_IFACE1"
+        ;;
+    bind|show)
+        echo "Binding $FULLHAN_IFACE0 to uvcvideo..."
+        echo "$FULLHAN_IFACE0" > /sys/bus/usb/drivers/uvcvideo/bind 2>/dev/null || echo "Failed to bind $FULLHAN_IFACE0"
+        echo "Binding $FULLHAN_IFACE1 to uvcvideo..."
+        echo "$FULLHAN_IFACE1" > /sys/bus/usb/drivers/uvcvideo/bind 2>/dev/null || echo "Failed to bind $FULLHAN_IFACE1"
+        ;;
+    status)
+        if [ -L "/sys/bus/usb/drivers/uvcvideo/$FULLHAN_IFACE0" ]; then
+            echo "bound"
+        else
+            echo "unbound"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 [iface0] [iface1] [unbind|bind|status]"
+        exit 1
+        ;;
+esac

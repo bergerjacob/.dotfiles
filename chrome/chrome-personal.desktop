@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Chrome - Personal
-Exec=google-chrome-stable --user-data-dir=/home/bergerj/.config/chrome-profiles/personal --class="Chrome-personal" --enable-features=UseOzonePlatform --ozone-platform-hint=wayland --disable-gpu
+Exec=env LIBVA_DRIVER_NAME=nvidia google-chrome-stable --user-data-dir=/home/bergerj/.config/chrome-profiles/personal --class="Chrome-personal" --ozone-platform=x11 --enable-features=VaapiVideoDecoder,VaapiVideoEncoder --disable-features=UseChromeOSDirectVideoDecoder --disable-gpu-memory-buffer-video-frames
 Icon=google-chrome
 Type=Application
 Categories=Network;WebBrowser;

@@ -1,0 +1,46 @@
+#!/bin/bash
+# test-screen-share: Test if Wayland screen sharing is working properly
+
+echo "=== Screen Share Diagnostic ==="
+echo ""
+
+# Check portal services
+echo "1. Checking portal services..."
+systemctl --user is-active xdg-desktop-portal >/dev/null 2>&1 && echo "   xdg-desktop-portal: RUNNING" || echo "   xdg-desktop-portal: NOT RUNNING"
+systemctl --user is-active xdg-desktop-portal-wlr >/dev/null 2>&1 && echo "   xdg-desktop-portal-wlr: RUNNING" || echo "   xdg-desktop-portal-wlr: NOT RUNNING"
+systemctl --user is-active xdg-desktop-portal-gtk >/dev/null 2>&1 && echo "   xdg-desktop-portal-gtk: RUNNING" || echo "   xdg-desktop-portal-gtk: NOT RUNNING"
+
+echo ""
+echo "2. Checking environment..."
+echo "   XDG_CURRENT_DESKTOP=$XDG_CURRENT_DESKTOP"
+echo "   XDG_SESSION_TYPE=$XDG_SESSION_TYPE"
+echo "   WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
+
+echo ""
+echo "3. Checking portal config..."
+cat ~/.config/xdg-desktop-portal/sway-portals.conf 2>/dev/null | sed 's/^/   /'
+
+echo ""
+echo "4. Checking xdpw config..."
+cat ~/.config/xdg-desktop-portal-wlr/config 2>/dev/null | sed 's/^/   /'
+
+echo ""
+echo "5. Checking for problematic env vars..."
+env | grep -E "WLR_RENDER_NO_EXPLICIT_SYNC|__NV_PRIME_RENDER_OFFLOAD" | sed 's/^/   /'
+[ -z "$(env | grep -E "WLR_RENDER_NO_EXPLICIT_SYNC|__NV_PRIME_RENDER_OFFLOAD")" ] && echo "   (none found - good)"
+
+echo ""
+echo "6. Recent portal-wlr logs (last 5 lines)..."
+journalctl --user -u xdg-desktop-portal-wlr -n 5 --no-pager 2>/dev/null | sed 's/^/   /'
+
+echo ""
+echo "=== To test screen sharing ==="
+echo "1. Close Zoom completely"
+echo "2. Run: systemctl --user restart xdg-desktop-portal xdg-desktop-portal-wlr xdg-desktop-portal-gtk"
+echo "3. Open Zoom"
+echo "4. Go to Settings → Share Screen → Advanced"
+echo "5. Set 'Screen capture mode on Wayland' to 'Pipewire Mode'"
+echo "6. Join a test meeting and try sharing your screen"
+echo ""
+echo "If it still doesn't work, try launching Zoom with:"
+echo "   XDG_CURRENT_DESKTOP=GNOME /usr/bin/zoom"

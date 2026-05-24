@@ -4,10 +4,10 @@ set $mod Mod4
 # -- Monitor Configuration (Wayland)
 # -------------------------------------------------------------------
 # MSI 1080p 165Hz (Main)
-output DP-4 resolution 1920x1080@165Hz position 0,0
+output DP-1 resolution 1920x1080@165Hz position 0,0 adaptive_sync off
 
 # Samsung 4K (Secondary)
-output HDMI-A-2 resolution 3840x2160@60Hz position 1920,0
+output HDMI-A-1 resolution 3840x2160@60Hz position 1920,0 adaptive_sync off max_render_time 10
 
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
@@ -55,7 +55,7 @@ exec_always --no-startup-id ~/Scripts/launch-gammastep
 bindsym $mod+Shift+Escape kill
 
 # A more modern dmenu replacement is rofi:
-bindcode $mod+40 exec "rofi -modi drun,run -show drun -monitor 'DP-4'"
+bindcode $mod+40 exec "rofi -modi drun,run -show drun -monitor 'DP-1'"
 
 # change focus
 bindsym $mod+h focus left
@@ -87,17 +87,17 @@ set $ws_password_manager "9:󰟵"
 set $ws_browser_personal "10:"
 set $ws_music "11:"
 
-workspace $ws_terminal output DP-4
-workspace $ws_browser_main output DP-4
-workspace $ws_browser_orst output DP-4
-workspace $ws_browser_personal output HDMI-A-2
-workspace $ws_discord_personal output DP-4
-workspace $ws_discord_professional output DP-4
-workspace $ws_teams output DP-4
-workspace $ws_email output DP-4
-workspace $ws_calendar output DP-4
-workspace $ws_music output HDMI-A-2
-workspace $ws_password_manager output DP-4
+workspace $ws_terminal output DP-1
+workspace $ws_browser_main output DP-1
+workspace $ws_browser_orst output DP-1
+workspace $ws_browser_personal output HDMI-A-1
+workspace $ws_discord_personal output DP-1
+workspace $ws_discord_professional output DP-1
+workspace $ws_teams output DP-1
+workspace $ws_email output DP-1
+workspace $ws_calendar output DP-1
+workspace $ws_music output HDMI-A-1
+workspace $ws_password_manager output DP-1
 
 
 # -------------------------------------------------------------------

@@ -1,0 +1,23 @@
+#!/bin/bash
+# zoom-webcam: Launch Zoom normally with Fullhan webcam
+# Ensures the webcam is visible and resets it if needed
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Ensure proper Wayland environment is set
+export XDG_CURRENT_DESKTOP=sway
+export XDG_SESSION_TYPE=wayland
+
+# Ensure Fullhan webcam is visible
+echo "Preparing webcam..."
+"$SCRIPT_DIR/camera-mode" webcam
+
+# Launch Zoom
+/usr/bin/zoom "$@" &
+ZOOM_PID=$!
+
+echo "Zoom launched with webcam (PID: $ZOOM_PID)"
+
+wait $ZOOM_PID 2>/dev/null || true

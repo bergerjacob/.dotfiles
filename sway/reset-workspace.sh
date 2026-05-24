@@ -9,14 +9,22 @@
 declare -A APP_HOMES=(
     ["app_id:Alacritty"]="1:"
     ["app_id:Chrome-main"]="2:"
+    ["class:Chrome-main"]="2:"
     ["app_id:Chrome-orst"]="3:󰑴"
+    ["class:Chrome-orst"]="3:󰑴"
     ["app_id:Chrome-personal"]="10:"
+    ["class:Chrome-personal"]="10:"
     ["app_id:chrome-cimiifkhcfbmjjijkgcgcdaokkgdlime-Default"]="7:󰇮"
+    ["instance:crx_cimiifkhcfbmjjijkgcgcdaokkgdlime"]="7:󰇮"
     # Chrome PWAs (app_id = "chrome-<EXTENSION_ID>-Default")
     ["app_id:chrome-cifhbcnohmdccbgoicgdjpfamggdegmo-Default"]="6:󰊻"
+    ["instance:crx_cifhbcnohmdccbgoicgdjpfamggdegmo"]="6:󰊻"
     ["app_id:chrome-kjbdgfilnfhdoflbpgamdcdgpehopbep-Default"]="8:"
+    ["instance:crx_kjbdgfilnfhdoflbpgamdcdgpehopbep"]="8:"
     ["app_id:chrome-kajebgjangihfbkjfejcanhanjmmbcfd-Default"]="9:󰟵"
+    ["instance:crx_kajebgjangihfbkjfejcanhanjmmbcfd"]="9:󰟵"
     ["app_id:chrome-cinhimbnkkaeohfgghhklpknlkffjgod-Default"]="11:"
+    ["instance:crx_cinhimbnkkaeohfgghhklpknlkffjgod"]="11:"
     ["mark:discord_personal"]="4:"
     ["mark:discord_professional"]="5:󰙯"
     ["app_id:discord"]="4:" # Fallback for any unmarked Discord window
@@ -31,18 +39,21 @@ mapfile -t window_nodes < <(swaymsg -t get_tree | jq -c \
     '.. | select(.type?=="workspace" and .name==$ws) |
     (.nodes[]?, .floating_nodes[]?) | .. | objects | select(.window_properties? or .app_id?)')
 
-# Find the "native" application key for the current workspace.
-NATIVE_ID_KEY=""
+# Find all "native" application keys for the current workspace.
+declare -a NATIVE_KEYS=()
+NATIVE_MARK_KEY=""
 for key in "${!APP_HOMES[@]}"; do
     if [[ "${APP_HOMES[$key]}" == "$FOCUSED_WS_NAME" ]]; then
-        NATIVE_ID_KEY=$key
-        break
+        if [[ "$key" == mark:* ]]; then
+            NATIVE_MARK_KEY="$key"
+        else
+            NATIVE_KEYS+=("$key")
+        fi
     fi
 done
 
-if [[ -z "$NATIVE_ID_KEY" ]]; then exit 0; fi
-NATIVE_ID_TYPE="${NATIVE_ID_KEY%%:*}"
-NATIVE_ID_PATTERN="${NATIVE_ID_KEY#*:}"
+if [[ ${#NATIVE_KEYS[@]} -eq 0 && -z "$NATIVE_MARK_KEY" ]]; then exit 0; fi
+NATIVE_MARK_PATTERN="${NATIVE_MARK_KEY#*:}"
 
 # Loop through each window on the workspace.
 for node in "${window_nodes[@]}"; do
@@ -55,20 +66,31 @@ for node in "${window_nodes[@]}"; do
     # Build hash keys for lookup
     w_id_keys=()
     [[ -n "$w_app_id" ]] && w_id_keys+=("app_id:$w_app_id")
-    [[ -n "$w_class" ]] && w_id_keys+=("class:$w_class")
     [[ -n "$w_instance" ]] && w_id_keys+=("instance:$w_instance")
+    [[ -n "$w_class" ]] && w_id_keys+=("class:$w_class")
 
-    # Check if the window is native to this workspace.
-    is_native=false
+    # Determine the window's primary identity (most specific first)
+    primary_id=""
     for id_key in "${w_id_keys[@]}"; do
-        if [[ "$id_key" == "$NATIVE_ID_KEY" ]]; then
-            is_native=true
+        if [[ -v APP_HOMES["$id_key"] ]]; then
+            primary_id="$id_key"
             break
         fi
     done
+
+    # Check if the window is native to this workspace.
+    is_native=false
+    if [[ -n "$primary_id" ]]; then
+        for native_key in "${NATIVE_KEYS[@]}"; do
+            if [[ "$primary_id" == "$native_key" ]]; then
+                is_native=true
+                break
+            fi
+        done
+    fi
     # mark-based native check
-    if [[ "$NATIVE_ID_TYPE" == "mark" ]]; then
-        if [[ ",$w_marks," == *",${NATIVE_ID_PATTERN},"* ]]; then
+    if [[ -n "$NATIVE_MARK_KEY" ]]; then
+        if [[ ",$w_marks," == *",${NATIVE_MARK_PATTERN},"* ]]; then
             is_native=true
         fi
     fi
