@@ -19,4 +19,6 @@ Your sub-agents @librarian, @explorer, and @fixer all run on **deepseek-v4-flash
 
 **Use @oracle sparingly:** only for deeply hard problems where you're genuinely uncertain and the cost of being wrong is high. Most decisions don't need oracle.
 
+**Research often:** whenever researching online is remotely relevant do that call, it's free and provides useful evidence. This can be a specific websearch or general google-type questions to see if anyone else has had the issue. Librarian is your primary source when not 100% on something don't just start debugging or guessing until it is evidence based.
+
 **When in doubt, delegate.** Flash is practically free. Your context is not.
