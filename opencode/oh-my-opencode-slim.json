@@ -1,5 +1,20 @@
 {
   "$schema": "https://unpkg.com/oh-my-opencode-slim@latest/oh-my-opencode-slim.schema.json",
+  "setDefaultAgent": true,
+  "sessionManager": {
+    "maxSessionsPerAgent": 4
+  },
+  "todoContinuation": {
+    "autoEnable": true,
+    "autoEnableThreshold": 3,
+    "maxContinuations": 8,
+    "cooldownMs": 2000
+  },
+  "multiplexer": {
+    "type": "auto",
+    "layout": "main-vertical",
+    "main_pane_size": 60
+  },
   "preset": "opencode-go",
   "presets": {
     "openai": {
@@ -48,6 +63,7 @@
       },
       "oracle": {
         "model": "opencode-go/glm-5.1",
+        "variant": "high",
         "skills": [
           "simplify"
         ],
@@ -60,6 +76,7 @@
       },
       "librarian": {
         "model": "opencode-go/deepseek-v4-flash",
+        "variant": "none",
         "skills": [],
         "mcps": [
           "websearch",
@@ -69,6 +86,7 @@
       },
       "explorer": {
         "model": "opencode-go/deepseek-v4-flash",
+        "variant": "none",
         "skills": [],
         "mcps": []
       },
@@ -82,7 +100,7 @@
       },
       "fixer": {
         "model": "opencode-go/deepseek-v4-flash",
-        "variant": "high",
+        "variant": "none",
         "skills": [],
         "mcps": []
       },
