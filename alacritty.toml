@@ -11,6 +11,7 @@ decorations_theme_variant = "Dark"
 
 [terminal]
 shell = { program = "/home/bergerj/.dotfiles/startup.sh", args = [] }
+osc52 = "CopyPaste"
 
 [keyboard]
 bindings = [ 
