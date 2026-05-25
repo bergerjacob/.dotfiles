@@ -161,3 +161,10 @@ export PATH="/home/bergerj/.local/bin:$PATH"
 
 
 source /home/bergerj/main/personal/local-ai/terminal-ai-thing-name-tbd/zsh-widget.zsh
+
+# ─── Word movement ───
+# Match Ctrl+Left / Ctrl+Right from modern terminals and tmux.
+bindkey -M emacs '^[[1;5D' backward-word
+bindkey -M emacs '^[[1;5C' forward-word
+bindkey -M viins '^[[1;5D' backward-word
+bindkey -M viins '^[[1;5C' forward-word
