@@ -1,0 +1,11 @@
+{
+  "lastChangelogVersion": "0.75.5",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "mimo-v2.5-pro",
+  "defaultThinkingLevel": "high",
+  "theme": "dark",
+  "skills": [
+    "+skills/agent-browser/SKILL.md"
+  ],
+  "hideThinkingBlock": false
+}
