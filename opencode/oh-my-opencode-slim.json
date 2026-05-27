@@ -62,7 +62,7 @@
         ]
       },
       "oracle": {
-        "model": "opencode-go/glm-5.1",
+        "model": "opencode-go/qwen3.7-max",
         "variant": "high",
         "skills": [
           "simplify"
