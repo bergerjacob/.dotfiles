@@ -115,3 +115,4 @@ end
 
 -- Set a keybinding to toggle the mappings
 vim.api.nvim_set_keymap('n', '<leader>g', ':lua ToggleGjGkMappings()<CR>', { noremap = true, silent = true })
+
