@@ -1,5 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "default_agent": "orchestrator",
+  "instructions": [
+    "./delegation-guidelines.md"
+  ],
+  "experimental": {
+    "batch_tool": true
+  },
   "permission": {
     "webfetch": "allow"
   },
@@ -22,15 +29,42 @@
     }
   },
   "plugin": [
-    "oh-my-openagent@latest",
+    "@tarquinen/opencode-dcp@latest",
     "oh-my-opencode-slim"
   ],
   "agent": {
+    "build": {
+      "disable": true
+    },
+    "plan": {
+      "disable": true
+    },
     "explore": {
       "disable": true
     },
     "general": {
       "disable": true
+    },
+    "doer": {
+      "description": "General-purpose coding agent. Pick a model, give instructions, get results. No delegation, no complexity.",
+      "model": "opencode-go/deepseek-v4-pro",
+      "permission": {
+        "read": "allow",
+        "edit": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "list": "allow",
+        "bash": "allow",
+        "webfetch": "allow",
+        "websearch": "allow",
+        "lsp": "allow",
+        "skill": "allow",
+        "question": "allow",
+        "todowrite": "allow",
+        "task": "deny",
+        "external_directory": "allow"
+      }
     }
-  }
+  },
+  "lsp": true
 }

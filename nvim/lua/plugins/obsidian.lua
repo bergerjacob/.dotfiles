@@ -201,10 +201,19 @@ return {
 		checkbox = {
 			order = { " ", "x" },
 		},
-		-- Remove nvim-only `id` field from frontmatter (Obsidian doesn't use it)
+		-- Obsidian doesn't use `id`, and uses the first alias as the display title.
+		-- Always mirrors the first alias to note.title (set during creation + rename).
 		frontmatter = {
 			func = function(note)
-				return { aliases = note.aliases, tags = note.tags }
+				local aliases = note.aliases or {}
+				if note.title and #note.title > 0 then
+					local new_aliases = { note.title }
+					for i = 2, #aliases do
+						new_aliases[#new_aliases + 1] = aliases[i]
+					end
+					aliases = new_aliases
+				end
+				return { aliases = aliases, tags = note.tags }
 			end,
 		},
 		-- Use title as filename instead of timestamp-ID
@@ -239,11 +248,25 @@ return {
 					actions.nav_link("prev")
 				end, { buffer = true, desc = "[obsidian] Previous link" })
 
-				-- Rename note + update all backlinks
-				vim.keymap.set("n", "<leader>or", "<cmd>Obsidian rename<cr>", {
-					buffer = true,
-					desc = "[obsidian] Rename note",
-				})
+				-- Rename note + update backlinks. Shows alias as prompt default,
+				-- preserves kebab-case filename, and updates alias on completion.
+				vim.keymap.set("n", "<leader>or", function()
+					local note = api.current_note(0)
+					if not note then
+						vim.notify("Not in a note", vim.log.levels.WARN)
+						return
+					end
+					local display = (note.aliases and #note.aliases > 0 and note.aliases[1])
+						or note.id or "untitled"
+					vim.ui.input({ prompt = "Rename note: ", default = display }, function(input)
+						if not input or #input == 0 then return end
+						local kebab = require("obsidian.builtin").title_id(input)
+						-- Set the pretty title on the note object so frontmatter.func
+						-- can use it to update the first alias during save_to_buffer.
+						note.title = input
+						vim.cmd("Obsidian rename " .. kebab)
+					end)
+				end, { buffer = true, desc = "[obsidian] Rename note" })
 
 				-- Link visual selection to existing note
 				vim.keymap.set("v", "<leader>ol", function()

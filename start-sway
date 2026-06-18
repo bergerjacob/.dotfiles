@@ -16,6 +16,9 @@ export WLR_NO_HARDWARE_CURSORS=1
 # on NVIDIA 555+. Explicit sync is now required for DMA-BUF sharing.
 # If you see tearing, try: export WLR_RENDER_NO_EXPLICIT_SYNC=1
 
+# XDG data directories (must include standard paths + flatpak)
+export XDG_DATA_DIRS="/usr/local/share:/usr/share:/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share"
+
 # Needed for zoom
 export XDG_CURRENT_DESKTOP=sway
 MOZ_ENABLE_WAYLAND=1 firefox
