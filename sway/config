@@ -57,7 +57,7 @@ exec_always --no-startup-id ~/Scripts/launch-gammastep
 bindsym $mod+Shift+Escape kill
 
 # A more modern dmenu replacement is rofi:
-bindcode $mod+40 exec "rofi -modi drun,run -show drun -monitor 'DP-1'"
+bindcode $mod+40 exec "rofi -modi drun,run -show drun -no-sort -monitor 'DP-1'"
 
 # change focus
 bindsym $mod+h focus left
