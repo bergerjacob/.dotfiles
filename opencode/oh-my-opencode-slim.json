@@ -19,7 +19,7 @@
   "presets": {
     "openai": {
       "orchestrator": {
-        "model": "opencode-go/deepseek-v4-pro",
+        "model": "neuralwatt/glm-5.2",
         "variant": "default",
         "skills": [],
         "mcps": [
@@ -51,7 +51,7 @@
     },
     "opencode-go": {
       "orchestrator": {
-        "model": "opencode-go/deepseek-v4-pro",
+        "model": "neuralwatt/glm-5.2",
         "variant": "none",
         "skills": [
           "*"

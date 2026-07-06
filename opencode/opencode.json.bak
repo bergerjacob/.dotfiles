@@ -47,7 +47,7 @@
     },
     "doer": {
       "description": "General-purpose coding agent. Pick a model, give instructions, get results. No delegation, no complexity.",
-      "model": "opencode-go/deepseek-v4-pro",
+      "model": "neuralwatt/glm-5.2",
       "permission": {
         "read": "allow",
         "edit": "allow",
