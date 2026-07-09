@@ -74,8 +74,8 @@ set $ws_browser_main "2:"
 set $ws_browser_orst "3:󰑴"
 set $ws_discord_personal "4:"
 set $ws_discord_professional "5:󰙯"
-set $ws_teams "6:󰊻"
-set $ws_email "7:󰇮"
+set $ws_telegram "6:󰋊"
+set $ws_obsidian "7:󰧶"
 set $ws_calendar "8:"
 set $ws_password_manager "9:󰟵"
 set $ws_browser_personal "10:"
@@ -87,8 +87,8 @@ workspace $ws_browser_orst output DP-0
 workspace $ws_browser_personal output HDMI-0
 workspace $ws_discord_personal output DP-0
 workspace $ws_discord_professional output DP-0
-workspace $ws_teams output DP-0
-workspace $ws_email output DP-0
+workspace $ws_telegram output DP-0
+workspace $ws_obsidian output DP-0
 workspace $ws_calendar output DP-0
 workspace $ws_music output HDMI-0
 workspace $ws_password_manager output DP-0
@@ -110,8 +110,8 @@ bindsym $mod+g workspace $ws_browser_orst
 bindsym $mod+z workspace $ws_browser_personal
 bindsym $mod+e workspace $ws_discord_personal
 bindsym $mod+r workspace $ws_discord_professional
-bindsym $mod+w workspace $ws_teams
-bindsym $mod+q workspace $ws_email
+bindsym $mod+w workspace $ws_telegram
+bindsym $mod+q workspace $ws_obsidian
 bindsym $mod+s workspace $ws_calendar
 bindsym $mod+a workspace $ws_music
 bindsym $mod+x workspace $ws_password_manager
@@ -137,11 +137,11 @@ bindsym $mod+Shift+z exec --no-startup-id ~/.dotfiles/i3/summon.sh class Chrome-
 bindsym $mod+Shift+e exec --no-startup-id ~/.dotfiles/i3/summon.sh mark discord_personal tiled_right
 bindsym $mod+Shift+r exec --no-startup-id ~/.dotfiles/i3/summon.sh mark discord_professional tiled_right
 
-# --- Teams (PWA - uses instance) ---
-bindsym $mod+Shift+w exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_cifhbcnohmdccbgoicgdjpfamggdegmo tiled_right
+# --- Telegram ---
+bindsym $mod+Shift+w exec --no-startup-id ~/.dotfiles/i3/summon.sh class telegram tiled_right
 
-# --- Email (Thunderbird - uses class) ---
-bindsym $mod+Shift+q exec --no-startup-id ~/.dotfiles/i3/summon.sh class thunderbird-default tiled_right
+# --- Obsidian ---
+bindsym $mod+Shift+q exec --no-startup-id ~/.dotfiles/i3/summon.sh class obsidian tiled_right
 
 # --- Calendar (PWA - uses instance) ---
 bindsym $mod+Shift+s exec --no-startup-id ~/.dotfiles/i3/summon.sh instance crx_kjbdgfilnfhdoflbpgamdcdgpehopbep tiled_right
@@ -193,8 +193,8 @@ bindsym $mod+Mod1+g move container to workspace $ws_browser_orst
 bindsym $mod+Mod1+z move container to workspace $ws_browser_personal
 bindsym $mod+Mod1+e move container to workspace $ws_discord_personal
 bindsym $mod+Mod1+r move container to workspace $ws_discord_professional
-bindsym $mod+Mod1+w move container to workspace $ws_teams
-bindsym $mod+Mod1+q move container to workspace $ws_email
+bindsym $mod+Mod1+w move container to workspace $ws_telegram
+bindsym $mod+Mod1+q move container to workspace $ws_obsidian
 bindsym $mod+Mod1+s move container to workspace $ws_calendar
 bindsym $mod+Mod1+a move container to workspace $ws_music
 bindsym $mod+Mod1+x move container to workspace $ws_password_manager
@@ -223,10 +223,10 @@ assign [class="(?i)Alacritty"] $ws_terminal
 assign [class="(?i)Chrome-main"] $ws_browser_main
 assign [class="(?i)Chrome-orst"] $ws_browser_orst
 assign [class="(?i)Chrome-personal"] $ws_browser_personal
-assign [class="(?i)thunderbird-default"] $ws_email
+assign [class="(?i)obsidian"] $ws_obsidian
 
 # -- PWAs (by instance for clarity and precision) --
-assign [instance="(?i)crx_cifhbcnohmdccbgoicgdjpfamggdegmo"] $ws_teams
+assign [class="(?i)telegram"] $ws_telegram
 assign [instance="(?i)crx_kjbdgfilnfhdoflbpgamdcdgpehopbep"] $ws_calendar
 assign [instance="(?i)crx_kajebgjangihfbkjfejcanhanjmmbcfd"] $ws_password_manager
 assign [instance="(?i)crx_cinhimbnkkaeohfgghhklpknlkffjgod"] $ws_music

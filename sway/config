@@ -82,8 +82,8 @@ set $ws_browser_main "2:"
 set $ws_browser_orst "3:󰑴"
 set $ws_discord_personal "4:"
 set $ws_discord_professional "5:󰙯"
-set $ws_teams "6:󰊻"
-set $ws_email "7:󰇮"
+set $ws_telegram "6:󰋊"
+set $ws_obsidian "7:󰧶"
 set $ws_calendar "8:"
 set $ws_password_manager "9:󰟵"
 set $ws_browser_personal "10:"
@@ -95,8 +95,8 @@ workspace $ws_browser_orst output DP-1
 workspace $ws_browser_personal output HDMI-A-1
 workspace $ws_discord_personal output DP-1
 workspace $ws_discord_professional output DP-1
-workspace $ws_teams output DP-1
-workspace $ws_email output DP-1
+workspace $ws_telegram output DP-1
+workspace $ws_obsidian output DP-1
 workspace $ws_calendar output DP-1
 workspace $ws_music output HDMI-A-1
 workspace $ws_password_manager output DP-1
@@ -118,8 +118,8 @@ bindsym $mod+g workspace $ws_browser_orst
 bindsym $mod+z workspace $ws_browser_personal
 bindsym $mod+e workspace $ws_discord_personal
 bindsym $mod+r workspace $ws_discord_professional
-bindsym $mod+w workspace $ws_teams
-bindsym $mod+q workspace $ws_email
+bindsym $mod+w workspace $ws_telegram
+bindsym $mod+q workspace $ws_obsidian
 bindsym $mod+s workspace $ws_calendar
 bindsym $mod+a workspace $ws_music
 bindsym $mod+x workspace $ws_password_manager
@@ -161,8 +161,8 @@ bindsym $mod+Shift+g move container to workspace $ws_browser_orst
 bindsym $mod+Shift+z move container to workspace $ws_browser_personal
 bindsym $mod+Shift+e move container to workspace $ws_discord_personal
 bindsym $mod+Shift+r move container to workspace $ws_discord_professional
-bindsym $mod+Shift+w move container to workspace $ws_teams
-bindsym $mod+Shift+q move container to workspace $ws_email
+bindsym $mod+Shift+w move container to workspace $ws_telegram
+bindsym $mod+Shift+q move container to workspace $ws_obsidian
 bindsym $mod+Shift+s move container to workspace $ws_calendar
 bindsym $mod+Shift+a move container to workspace $ws_music
 bindsym $mod+Shift+x move container to workspace $ws_password_manager
@@ -197,10 +197,10 @@ assign [app_id="(?i)Alacritty"] $ws_terminal
 assign [class="(?i)Chrome-main"] $ws_browser_main
 assign [class="(?i)Chrome-orst"] $ws_browser_orst
 assign [class="(?i)Chrome-personal"] $ws_browser_personal
-assign [class="(?i)thunderbird-default"] $ws_email
+assign [app_id="(?i)obsidian"] $ws_obsidian
 
 # -- PWAs (by instance for clarity and precision) --
-assign [instance="(?i)crx_cifhbcnohmdccbgoicgdjpfamggdegmo"] $ws_teams
+assign [app_id="(?i)org.telegram.desktop"] $ws_telegram
 assign [instance="(?i)crx_kjbdgfilnfhdoflbpgamdcdgpehopbep"] $ws_calendar
 assign [instance="(?i)crx_kajebgjangihfbkjfejcanhanjmmbcfd"] $ws_password_manager
 assign [instance="(?i)crx_cinhimbnkkaeohfgghhklpknlkffjgod"] $ws_music
