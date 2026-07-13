@@ -208,6 +208,12 @@ assign [instance="(?i)crx_cinhimbnkkaeohfgghhklpknlkffjgod"] $ws_music
 # -- Discord Initial Assignment --
 assign [class="(?i)discord"] $ws_discord_personal
 
+# -- Cursor (AI Code Editor) --
+# Native Wayland (Electron 39+ auto-detect) reports app_id="cursor".
+# XWayland fallback reports class="cursor". Cover both.
+assign [app_id="(?i)cursor"] $ws_terminal
+assign [class="(?i)cursor"] $ws_terminal
+
 # -- Floating Window Rules --
 for_window [window_role="pop-up"] floating enable
 for_window [window_role="bubble"] floating enable
