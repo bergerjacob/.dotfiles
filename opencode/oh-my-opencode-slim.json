@@ -17,41 +17,9 @@
   },
   "preset": "opencode-go",
   "presets": {
-    "openai": {
-      "orchestrator": {
-        "model": "neuralwatt/glm-5.2",
-        "variant": "default",
-        "skills": [],
-        "mcps": [
-          "websearch",
-          "context7",
-          "grep_app"
-        ]
-      },
-      "explorer": {
-        "model": "openai/gpt-5.4-mini",
-        "variant": "low",
-        "skills": [],
-        "mcps": []
-      },
-      "designer": {
-        "model": "openai/gpt-5.4-mini",
-        "variant": "medium",
-        "skills": [
-          "agent-browser"
-        ],
-        "mcps": []
-      },
-      "fixer": {
-        "model": "openai/gpt-5.4-mini",
-        "variant": "low",
-        "skills": [],
-        "mcps": []
-      }
-    },
     "opencode-go": {
       "orchestrator": {
-        "model": "neuralwatt/glm-5.2",
+        "model": "opencode-go/deepseek-v4-pro",
         "variant": "none",
         "skills": [
           "*"
@@ -62,7 +30,7 @@
         ]
       },
       "oracle": {
-        "model": "opencode-go/qwen3.7-max",
+        "model": "opencode-go/glm-5.2",
         "variant": "high",
         "skills": [
           "simplify"

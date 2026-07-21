@@ -214,6 +214,12 @@ assign [class="(?i)discord"] $ws_discord_personal
 assign [app_id="(?i)cursor"] $ws_terminal
 assign [class="(?i)cursor"] $ws_terminal
 
+# -- OpenCode desktop (Electron app) --
+# StartupWMClass is "ai.opencode.desktop". Cover both shells (native Wayland
+# app_id vs XWayland class) — same pattern as Cursor.
+assign [app_id="(?i)ai.opencode.desktop"] $ws_terminal
+assign [class="(?i)ai.opencode.desktop"] $ws_terminal
+
 # -- Floating Window Rules --
 for_window [window_role="pop-up"] floating enable
 for_window [window_role="bubble"] floating enable

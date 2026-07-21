@@ -10,6 +10,17 @@
   "permission": {
     "webfetch": "allow"
   },
+  "mcp": {
+    "mailchimp": {
+      "type": "local",
+      "command": ["uvx", "mailchimp-mcp"],
+      "enabled": true,
+      "environment": {
+        "MAILCHIMP_API_KEY": "{env:MAILCHIMP_API_KEY}",
+        "MAILCHIMP_TOOLS": "list_campaigns,get_campaign_details,replicate_campaign,set_campaign_content,update_campaign,send_test_email,list_templates,get_template,get_template_default_content,create_template,update_template,list_automations,get_automation_emails,describe_tools"
+      }
+    }
+  },
   "provider": {
     "local-server": {
       "npm": "@ai-sdk/openai-compatible",
