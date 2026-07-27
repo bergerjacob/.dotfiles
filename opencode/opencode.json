@@ -58,7 +58,7 @@
     },
     "doer": {
       "description": "General-purpose coding agent. Pick a model, give instructions, get results. No delegation, no complexity.",
-      "model": "neuralwatt/glm-5.2",
+      "model": "opencode-go/glm-5.2",
       "permission": {
         "read": "allow",
         "edit": "allow",

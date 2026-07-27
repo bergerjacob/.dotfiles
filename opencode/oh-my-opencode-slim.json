@@ -19,8 +19,8 @@
   "presets": {
     "opencode-go": {
       "orchestrator": {
-        "model": "opencode-go/deepseek-v4-pro",
-        "variant": "none",
+        "model": "gmicloud/zai-org/GLM-5.2-FP8",
+        "variant": "default",
         "skills": [
           "*"
         ],
@@ -76,6 +76,14 @@
         "model": "opencode-go/kimi-k2.7-code",
         "skills": [],
         "mcps": []
+      },
+      "analyst": {
+        "model": "opencode-go/deepseek-v4-pro",
+        "variant": "medium",
+        "skills": [],
+        "mcps": [],
+        "prompt": "You are Analyst, a thoughtful reasoning agent for complex analysis and problem-solving. You run on deepseek-v4-pro — a capable model suited for deep reasoning, planning, investigation, and non-trivial tasks.\n\n# Capabilities\n- **Direct tool access**: read, write, search, execute code, web fetch.\n- **Sub-agent delegation**: You CAN spawn sub-agents for parallel or cheap work (@explorer, @librarian, @fixer, @observer).\n- **No oracle**: Handle reasoning and analysis yourself.\n\n# Work Style\n1. Think through the problem and form a plan before acting.\n2. Break complex problems into manageable parts.\n3. Delegate cheap searches/edits to flash subagents.\n4. Verify conclusions against evidence.",
+        "orchestratorPrompt": "Delegate to @analyst for non-trivial reasoning, analysis, planning, or investigation tasks that are too complex for flash agents but don't yet need @oracle's architectural judgment. Use for multi-step reasoning, problem decomposition, research synthesis, or complex debugging where deep thinking matters. The analyst uses deepseek-v4-pro with medium reasoning budget. Fan out multiple analyst lanes in parallel for independent reasoning work."
       }
     }
   },
