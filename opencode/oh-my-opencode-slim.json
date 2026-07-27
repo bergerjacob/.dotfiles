@@ -19,7 +19,7 @@
   "presets": {
     "opencode-go": {
       "orchestrator": {
-        "model": "gmicloud/zai-org/GLM-5.2-FP8",
+        "model": "opencode-go/glm-5.2",
         "variant": "default",
         "skills": [
           "*"
