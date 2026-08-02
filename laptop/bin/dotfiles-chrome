@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export LIBVA_DRIVER_NAME=radeonsi
+exec google-chrome-stable \
+  --ozone-platform=wayland \
+  --enable-features=VaapiVideoDecoder,VaapiVideoEncoder \
+  --disable-features=UseChromeOSDirectVideoDecoder \
+  "$@"

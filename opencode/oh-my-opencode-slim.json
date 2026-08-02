@@ -62,7 +62,7 @@
         ]
       },
       "oracle": {
-        "model": "opencode-go/qwen3.7-max",
+        "model": "neuralwatt/glm-5.2",
         "variant": "high",
         "skills": [
           "simplify"

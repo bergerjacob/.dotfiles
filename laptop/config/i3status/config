@@ -1,0 +1,61 @@
+# i3status configuration file for laptop systems.
+# see "man i3status" for documentation.
+#
+# It is important that this file is edited as UTF-8.
+# The following line should contain a sharp s:
+# ß
+# If the above line is not correctly displayed, fix your editor first!
+
+general {
+        colors = true
+        interval = 5
+}
+
+order += "ethernet _first_"
+order += "wireless _first_"
+order += "battery all"
+order += "disk /"
+order += "load"
+order += "memory"
+order += "tztime local"
+
+ethernet _first_ {
+        format_up = "Net: %if (%ip)"
+        format_down = "Net: wired down"
+}
+
+wireless _first_ {
+        format_up = "WiFi: %if %quality%% (%essid)"
+        format_down = "WiFi: down"
+}
+
+battery all {
+        format = "Bat: %percentage%% (%remaining)"
+        format_down = "Bat: n/a"
+        status_chr = "CHR"
+        status_bat = "BAT"
+        status_full = "FULL"
+        low_threshold = 15
+        threshold_type = "percentage"
+        integer_battery_capacity = true
+        last_full_capacity = true
+}
+
+disk "/" {
+        format = "%avail"
+}
+
+load {
+        format = "%1min"
+        max_threshold = "12.0"
+}
+
+memory {
+        format = "%used / %total (%percentage_used)"
+        threshold_degraded = "10%"
+        threshold_critical = "5%"
+}
+
+tztime local {
+        format = "%a %b %d %I:%M %p"
+}

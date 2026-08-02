@@ -100,15 +100,11 @@ alias pip="pip3"
 alias fd='fdfind'
 alias drag='ripdrag'
 
-# ─── Sway/Wayland ───
-export WLR_NO_HARDWARE_CURSORS=1
-. "$HOME/.cargo/env"
-export WLR_DRM_NO_ATOMIC=0
-export WLR_DRM_DEVICES=/dev/dri/card0
-export GBM_BACKEND=nvidia-drm
-export __GLX_VENDOR_LIBRARY_NAME=nvidia
-export __NV_PRIME_RENDER_OFFLOAD=1
-export __VK_LAYER_NV_optimus=NVIDIA_only
+# ─── Rust ───
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+
+# ─── Machine profile ───
+[ -f "$HOME/.config/dotfiles/shell-profile.sh" ] && . "$HOME/.config/dotfiles/shell-profile.sh"
 
 # ─── Completions ───
 autoload -Uz compinit && compinit

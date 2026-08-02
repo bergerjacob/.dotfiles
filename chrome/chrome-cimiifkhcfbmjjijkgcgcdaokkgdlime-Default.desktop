@@ -4,6 +4,6 @@ Version=1.0
 Terminal=false
 Type=Application
 Name=Cypht (Mail)
-Exec=env LIBVA_DRIVER_NAME=nvidia /opt/google/chrome/google-chrome --user-data-dir=/home/bergerj/.config/chrome-profiles/main --profile-directory=Default --app-id=cimiifkhcfbmjjijkgcgcdaokkgdlime --ozone-platform=x11 --enable-features=VaapiVideoDecoder,VaapiVideoEncoder --disable-features=UseChromeOSDirectVideoDecoder --disable-gpu-memory-buffer-video-frames
+Exec=/home/bergerj/.local/bin/dotfiles-chrome --user-data-dir=/home/bergerj/.config/chrome-profiles/main --profile-directory=Default --app-id=cimiifkhcfbmjjijkgcgcdaokkgdlime
 Icon=google-chrome
 StartupWMClass=chrome-cimiifkhcfbmjjijkgcgcdaokkgdlime-Default

@@ -1,19 +1,15 @@
 set $mod Mod4
 
 # -------------------------------------------------------------------
-# -- Monitor Configuration (Wayland)
+# -- Machine Configuration
 # -------------------------------------------------------------------
-# MSI 1080p 165Hz (Main)
-output DP-1 resolution 1920x1080@165Hz position 0,0 adaptive_sync off
-
-# Samsung 4K (Secondary)
-output HDMI-A-1 resolution 3840x2160@60Hz position 1920,0 adaptive_sync off max_render_time 10
+# setup-symlinks.sh selects this file from laptop/ or pc/. It defines output
+# names, display modes, input settings, and any hardware-specific bindings.
+include ~/.config/sway/machine.conf
 
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
 font pango:monospace 8
-
-# X resources not used in Wayland (cursor/theme handled via gsettings/GTK)
 
 # Start XDG autostart .desktop files using dex. See also
 # https://wiki.archlinux.org/index.php/XDG_Autostart
@@ -23,11 +19,11 @@ exec --no-startup-id dex --autostart --environment sway
 
 # Export environment variables for Wayland and XDG
 exec systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_DATA_DIRS
-# Tell systemd where display is + NVIDIA Wayland env
-exec --no-startup-id dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway XDG_SESSION_TYPE=wayland GBM_BACKEND=nvidia-drm __GLX_VENDOR_LIBRARY_NAME=nvidia
+# Tell D-Bus and systemd about the active Wayland session.
+exec --no-startup-id dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
 
-# Start notification daemon
-exec_always --no-startup-id $HOME/Scripts/dunst-launch.sh
+# Start the profile's notification daemon command.
+exec_always --no-startup-id $notification_command
 
 # -------------------------------------------------------------------
 # -- Idle and Lock Management (Wayland)
@@ -36,9 +32,6 @@ exec_always --no-startup-id $HOME/Scripts/dunst-launch.sh
 exec swayidle -w \
     timeout 7200 'swaylock -f' \
     before-sleep 'swaylock -f'
-
-
-bindsym $mod+v exec --no-startup-id ~/Scripts/stt-toggle.sh
 
 # Start clipboard manager
 exec --no-startup-id copyq
@@ -50,14 +43,11 @@ bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT
 bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
 bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
 
-# Autostart the blue light filter (gammastep)
-exec_always --no-startup-id ~/Scripts/launch-gammastep
+# Autostart the profile's blue light filter command.
+exec_always --no-startup-id $gammastep_command
 
 # kill focused window
 bindsym $mod+Shift+Escape kill
-
-# A more modern dmenu replacement is rofi:
-bindcode $mod+40 exec "rofi -modi drun,run -show drun -no-sort -monitor 'DP-1'"
 
 # change focus
 bindsym $mod+h focus left
@@ -89,17 +79,17 @@ set $ws_password_manager "9:󰟵"
 set $ws_browser_personal "10:"
 set $ws_music "11:"
 
-workspace $ws_terminal output DP-1
-workspace $ws_browser_main output DP-1
-workspace $ws_browser_orst output DP-1
-workspace $ws_browser_personal output HDMI-A-1
-workspace $ws_discord_personal output DP-1
-workspace $ws_discord_professional output DP-1
-workspace $ws_teams output DP-1
-workspace $ws_email output DP-1
-workspace $ws_calendar output DP-1
-workspace $ws_music output HDMI-A-1
-workspace $ws_password_manager output DP-1
+workspace $ws_terminal output $primary_output
+workspace $ws_browser_main output $primary_output
+workspace $ws_browser_orst output $primary_output
+workspace $ws_browser_personal output $secondary_output
+workspace $ws_discord_personal output $primary_output
+workspace $ws_discord_professional output $primary_output
+workspace $ws_teams output $primary_output
+workspace $ws_email output $primary_output
+workspace $ws_calendar output $primary_output
+workspace $ws_music output $secondary_output
+workspace $ws_password_manager output $primary_output
 
 
 # -------------------------------------------------------------------
@@ -186,34 +176,22 @@ bindsym $mod+Shift+n move workspace to output left
 # -------------------------------------------------------------------
 # Assign applications to their home workspaces on launch
 #
-# Wayland note: Native Wayland apps use app_id instead of class.
-# Xwayland apps still report class. Use 'swaymsg -t get_tree' to inspect.
-# Rules below use class (works for both via Xwayland). If an app isn't
-# being assigned, check whether it reports app_id and add a duplicate rule.
-
-# -- General Apps (by class) --
-assign [class="(?i)Alacritty"] $ws_terminal
+# Use `swaymsg -t get_tree` to inspect an application's native app_id.
 assign [app_id="(?i)Alacritty"] $ws_terminal
-assign [class="(?i)Chrome-main"] $ws_browser_main
-assign [class="(?i)Chrome-orst"] $ws_browser_orst
-assign [class="(?i)Chrome-personal"] $ws_browser_personal
-assign [class="(?i)thunderbird-default"] $ws_email
+assign [app_id="(?i)Chrome-main"] $ws_browser_main
+assign [app_id="(?i)Chrome-orst"] $ws_browser_orst
+assign [app_id="(?i)Chrome-personal"] $ws_browser_personal
+assign [app_id="(?i)thunderbird.*"] $ws_email
 
-# -- PWAs (by instance for clarity and precision) --
-assign [instance="(?i)crx_cifhbcnohmdccbgoicgdjpfamggdegmo"] $ws_teams
-assign [instance="(?i)crx_kjbdgfilnfhdoflbpgamdcdgpehopbep"] $ws_calendar
-assign [instance="(?i)crx_kajebgjangihfbkjfejcanhanjmmbcfd"] $ws_password_manager
-assign [instance="(?i)crx_cinhimbnkkaeohfgghhklpknlkffjgod"] $ws_music
+# -- Chrome PWAs --
+assign [app_id="(?i)chrome-cifhbcnohmdccbgoicgdjpfamggdegmo-Default"] $ws_teams
+assign [app_id="(?i)chrome-kjbdgfilnfhdoflbpgamdcdgpehopbep-Default"] $ws_calendar
+assign [app_id="(?i)chrome-kajebgjangihfbkjfejcanhanjmmbcfd-Default"] $ws_password_manager
+assign [app_id="(?i)chrome-cinhimbnkkaeohfgghhklpknlkffjgod-Default"] $ws_music
+assign [app_id="(?i)chrome-cimiifkhcfbmjjijkgcgcdaokkgdlime-Default"] $ws_email
 
 # -- Discord Initial Assignment --
-assign [class="(?i)discord"] $ws_discord_personal
-
-# -- Floating Window Rules --
-for_window [window_role="pop-up"] floating enable
-for_window [window_role="bubble"] floating enable
-for_window [window_role="dialog"] floating enable
-for_window [window_type="dialog"] floating enable
-
+assign [app_id="(?i)discord"] $ws_discord_personal
 
 # reload the configuration file
 bindsym $mod+Shift+i reload
@@ -227,11 +205,11 @@ bindsym $mod+n fullscreen toggle
 focus_follows_mouse no
 mouse_warping none
 
-bindsym $mod+Control+s exec --no-startup-id ~/Scripts/screenshot
-bindsym $mod+Control+c exec --no-startup-id ~/Scripts/screenshot-path
+bindsym $mod+Control+s exec --no-startup-id $screenshot_command
+bindsym $mod+Control+c exec --no-startup-id $screenshot_path_command
 
-bindsym $mod+Control+o exec --no-startup-id ~/Scripts/ocr-screenshot
-bindsym $mod+Control+p exec --no-startup-id ~/Scripts/type-from-clipboard
+bindsym $mod+Control+o exec --no-startup-id $ocr_screenshot_command
+bindsym $mod+Control+p exec --no-startup-id $type_clipboard_command
 
 # Start swaybar to display a workspace bar
 bar {
@@ -243,19 +221,17 @@ bar {
 # --- Zoom Window Fixes ---
 
 # Float the annotation toolbar
-for_window [class="[Zz]oom" title="annotate_toolbar"] floating enable
 for_window [app_id="[Zz]oom" title="annotate_toolbar"] floating enable
 
 # Float the screen-sharing toolbar
-for_window [class="[Zz]oom" title="as_toolbar"] floating enable
 for_window [app_id="[Zz]oom" title="as_toolbar"] floating enable
 
 # Float smaller pop-ups and settings menus
-for_window [class="[Zz]oom" title="^zoom$"] border none, floating enable
 for_window [app_id="[Zz]oom" title="^zoom$"] border none, floating enable
-for_window [class="[Zz]oom" title="Settings"] floating enable
 for_window [app_id="[Zz]oom" title="Settings"] floating enable
 
 # (Optional) Float the initial meeting join splash screen
-for_window [class="[Zz]oom" title="Zoom - Free Account"] floating enable
 for_window [app_id="[Zz]oom" title="Zoom - Free Account"] floating enable
+
+# XWayland compatibility and other late rules are profile-specific.
+include ~/.config/sway/machine-rules.conf

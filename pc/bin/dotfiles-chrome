@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export LIBVA_DRIVER_NAME=nvidia
+exec google-chrome-stable \
+  --ozone-platform=x11 \
+  --enable-features=VaapiVideoDecoder,VaapiVideoEncoder \
+  --disable-features=UseChromeOSDirectVideoDecoder \
+  --disable-gpu-memory-buffer-video-frames \
+  "$@"

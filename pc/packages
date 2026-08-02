@@ -1,0 +1,4 @@
+firmware-misc-nonfree
+nvidia-driver
+v4l-utils
+v4l2loopback-dkms

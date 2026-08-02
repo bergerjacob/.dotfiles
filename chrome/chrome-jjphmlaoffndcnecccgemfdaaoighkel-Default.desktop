@@ -4,6 +4,6 @@ Version=1.0
 Terminal=false
 Type=Application
 Name=Floating for YouTube™
-Exec=env LIBVA_DRIVER_NAME=nvidia /opt/google/chrome/google-chrome "--user-data-dir=/home/bergerj/.config/chrome-profiles/personal" --profile-directory=Default --app-id=jjphmlaoffndcnecccgemfdaaoighkel --ozone-platform=x11 --enable-features=VaapiVideoDecoder,VaapiVideoEncoder --disable-features=UseChromeOSDirectVideoDecoder --disable-gpu-memory-buffer-video-frames
+Exec=/home/bergerj/.local/bin/dotfiles-chrome --user-data-dir=/home/bergerj/.config/chrome-profiles/personal --profile-directory=Default --app-id=jjphmlaoffndcnecccgemfdaaoighkel
 Icon=chrome-jjphmlaoffndcnecccgemfdaaoighkel-Default
 StartupWMClass=crx_jjphmlaoffndcnecccgemfdaaoighkel

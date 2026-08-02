@@ -5,7 +5,8 @@
 
 # --- CONFIGURATION ---
 # Defines the home workspace for each application.
-# Windows are identified by app_id (Wayland) with fallback to class/instance (XWayland).
+# Windows are identified by app_id with class/instance fallback for the PC's
+# intentionally XWayland-hosted applications.
 declare -A APP_HOMES=(
     ["app_id:Alacritty"]="1:"
     ["app_id:Chrome-main"]="2:"
@@ -16,7 +17,6 @@ declare -A APP_HOMES=(
     ["class:Chrome-personal"]="10:"
     ["app_id:chrome-cimiifkhcfbmjjijkgcgcdaokkgdlime-Default"]="7:󰇮"
     ["instance:crx_cimiifkhcfbmjjijkgcgcdaokkgdlime"]="7:󰇮"
-    # Chrome PWAs (app_id = "chrome-<EXTENSION_ID>-Default")
     ["app_id:chrome-cifhbcnohmdccbgoicgdjpfamggdegmo-Default"]="6:󰊻"
     ["instance:crx_cifhbcnohmdccbgoicgdjpfamggdegmo"]="6:󰊻"
     ["app_id:chrome-kjbdgfilnfhdoflbpgamdcdgpehopbep-Default"]="8:"
@@ -63,7 +63,7 @@ for node in "${window_nodes[@]}"; do
     w_instance=$(echo "$node" | jq -r '.window_properties.instance // ""')
     w_marks=$(echo "$node" | jq -r '(.marks//[]) | join(",")')
 
-    # Build hash keys for lookup
+    # Build application keys in native-to-compatibility order.
     w_id_keys=()
     [[ -n "$w_app_id" ]] && w_id_keys+=("app_id:$w_app_id")
     [[ -n "$w_instance" ]] && w_id_keys+=("instance:$w_instance")
