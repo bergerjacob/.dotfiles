@@ -126,6 +126,8 @@ link_path "$DOTFILES_DIR/mimeapps.list" "$HOME/.config/mimeapps.list"
 link_path "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
 link_path "$DOTFILES_DIR/opencode" "$HOME/.config/opencode"
 link_path "$DOTFILES_DIR/sway/config" "$HOME/.config/sway/config"
+link_path "$DOTFILES_DIR/waybar/config" "$HOME/.config/waybar/config"
+link_path "$DOTFILES_DIR/waybar/style.css" "$HOME/.config/waybar/style.css"
 
 for desktop_file in "$DOTFILES_DIR"/chrome/*.desktop; do
   link_path "$desktop_file" "$HOME/.local/share/applications/$(basename "$desktop_file")"

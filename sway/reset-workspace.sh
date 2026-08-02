@@ -9,16 +9,19 @@
 # intentionally XWayland-hosted applications.
 declare -A APP_HOMES=(
     ["app_id:Alacritty"]="1:"
+    ["class:Alacritty"]="1:"
     ["app_id:Chrome-main"]="2:"
     ["class:Chrome-main"]="2:"
     ["app_id:Chrome-orst"]="3:󰑴"
     ["class:Chrome-orst"]="3:󰑴"
     ["app_id:Chrome-personal"]="10:"
     ["class:Chrome-personal"]="10:"
-    ["app_id:chrome-cimiifkhcfbmjjijkgcgcdaokkgdlime-Default"]="7:󰇮"
-    ["instance:crx_cimiifkhcfbmjjijkgcgcdaokkgdlime"]="7:󰇮"
-    ["app_id:chrome-cifhbcnohmdccbgoicgdjpfamggdegmo-Default"]="6:󰊻"
-    ["instance:crx_cifhbcnohmdccbgoicgdjpfamggdegmo"]="6:󰊻"
+    ["app_id:obsidian"]="7:󰧶"
+    ["class:obsidian"]="7:󰧶"
+    ["app_id:org.telegram.desktop"]="6:󰋊"
+    ["class:TelegramDesktop"]="6:󰋊"
+    ["class:org.telegram.desktop"]="6:󰋊"
+    # Chrome PWAs (app_id = "chrome-<EXTENSION_ID>-Default")
     ["app_id:chrome-kjbdgfilnfhdoflbpgamdcdgpehopbep-Default"]="8:"
     ["instance:crx_kjbdgfilnfhdoflbpgamdcdgpehopbep"]="8:"
     ["app_id:chrome-kajebgjangihfbkjfejcanhanjmmbcfd-Default"]="9:󰟵"
@@ -28,6 +31,7 @@ declare -A APP_HOMES=(
     ["mark:discord_personal"]="4:"
     ["mark:discord_professional"]="5:󰙯"
     ["app_id:discord"]="4:" # Fallback for any unmarked Discord window
+    ["class:discord"]="4:"
 )
 
 # --- SCRIPT LOGIC ---
