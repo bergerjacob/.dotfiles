@@ -1,6 +1,7 @@
 {
   "$schema": "https://unpkg.com/oh-my-opencode-slim@latest/oh-my-opencode-slim.schema.json",
   "setDefaultAgent": true,
+  "stripOrchestratorModel": true,
   "sessionManager": {
     "maxSessionsPerAgent": 4
   },
@@ -19,8 +20,6 @@
   "presets": {
     "opencode-go": {
       "orchestrator": {
-        "model": "opencode-go/glm-5.2",
-        "variant": "default",
         "skills": [
           "*"
         ],
@@ -30,7 +29,10 @@
         ]
       },
       "oracle": {
-        "model": "opencode-go/glm-5.2",
+        "model": [
+          "openai/gpt-5.6-sol",
+          "opencode-go/kimi-k3"
+        ],
         "variant": "high",
         "skills": [
           "simplify"
@@ -59,8 +61,8 @@
         "mcps": []
       },
       "designer": {
-        "model": "opencode-go/kimi-k2.7-code",
-        "variant": "medium",
+        "model": "opencode-go/kimi-k3",
+        "variant": "max",
         "skills": [
           "agent-browser"
         ],
@@ -73,7 +75,7 @@
         "mcps": []
       },
       "observer": {
-        "model": "opencode-go/kimi-k2.7-code",
+        "model": "opencode-go/kimi-k3",
         "skills": [],
         "mcps": []
       },

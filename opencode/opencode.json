@@ -1,6 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "orchestrator",
+  "model": "opencode-go/deepseek-v4-flash",
   "instructions": [
     "./delegation-guidelines.md"
   ],
@@ -13,7 +14,10 @@
   "mcp": {
     "mailchimp": {
       "type": "local",
-      "command": ["uvx", "mailchimp-mcp"],
+      "command": [
+        "uvx",
+        "mailchimp-mcp"
+      ],
       "enabled": true,
       "environment": {
         "MAILCHIMP_API_KEY": "{env:MAILCHIMP_API_KEY}",
