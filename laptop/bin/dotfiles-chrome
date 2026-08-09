@@ -6,4 +6,5 @@ exec google-chrome-stable \
   --ozone-platform=wayland \
   --enable-features=VaapiVideoDecoder,VaapiVideoEncoder \
   --disable-features=UseChromeOSDirectVideoDecoder \
+  --disable-font-subpixel-positioning \
   "$@"

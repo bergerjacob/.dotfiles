@@ -1,6 +1,6 @@
 ## Flash-First Delegation
 
-Your sub-agents @librarian, @explorer, and @fixer all run on **deepseek-v4-flash** — it is extremely cheap and fast. Exploit this ruthlessly.
+Your sub-agents @librarian, @explorer, and @fixer run on efficient specialist models. Exploit this ruthlessly.
 
 **Default posture: delegate, don't DIY.** Whenever a task involves research, codebase search, docs lookup, or bounded implementation work, hand it off to a flash agent before doing it yourself. Ask "can a flash agent do this?" — if yes, delegate it.
 
