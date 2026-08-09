@@ -23,7 +23,7 @@ shape; this skill covers what is true on this machine.
 - `opencode/` contains: `opencode.json` (core config), `oh-my-opencode-slim.json`
   (plugin config), `oh-my-opencode-slim/` (prompt override files),
   `skills/` (this and other skills), `dcp.jsonc`, `tui.json`, `node_modules/`.
-- The active preset is `opencode-go` (set via `preset` key in
+- The active preset is `openai` (set via `preset` key in
   `oh-my-opencode-slim.json`).
 - Built-in agents in the preset: orchestrator, oracle, council, librarian,
   explorer, designer, fixer, observer, analyst. `disabled_agents: []`.
@@ -104,15 +104,20 @@ ordered fallback chain (schema: `AgentOverrideConfigSchema` in
   (missing variants are ignored, not fatal).
 - Works identically in presets and for custom agents.
 
-## Current model assignments (after Aug 2026 change)
+## Current model assignments (temporary OpenAI preset, Aug 2026)
 
-- **oracle**: `["openai/gpt-5.6-sol", "opencode-go/kimi-k3"]`, variant `high`,
-  skills `[simplify]`, mcps `[]`.
-- **designer**: `opencode-go/kimi-k3`, variant `max` (kimi-k3 only supports
-  `max`), skills `[agent-browser]`, mcps `[]`.
-- **observer**: `opencode-go/kimi-k3`, no variant, skills `[]`, mcps `[]`.
-- **fullcontrol** (custom agent, NOT in preset): `opencode-go/kimi-k2.7-code`,
-  variant "none" — still legacy kimi; change it if user wants it on kimi-k3.
+- The original `opencode-go` preset remains in the config unchanged for easy
+  restoration.
+- **orchestrator**: `openai/gpt-5.6-terra`, variant `high`.
+- **oracle** and **council**: `openai/gpt-5.6-sol`, variant `high`.
+- **librarian** and **explorer**: `openai/gpt-5.6-luna`, variant `low`.
+- **designer**: `openai/gpt-5.6-terra`, variant `high`.
+- **fixer** and **observer**: `openai/gpt-5.6-terra`, variant `medium`.
+- **analyst**: `openai/gpt-5.6-terra`, variant `high`.
+- **fullcontrol** (custom agent, not preset-scoped): `openai/gpt-5.6-sol`,
+  variant `high`.
+- Core defaults in `opencode.json`: `openai/gpt-5.6-terra` for both the global
+  model and `doer`.
 
 ## Keeping things updated
 

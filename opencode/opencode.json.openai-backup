@@ -1,7 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "orchestrator",
-  "model": "opencode-go/deepseek-v4-flash",
+  "model": "openai/gpt-5.6-terra",
   "instructions": [
     "./delegation-guidelines.md"
   ],
@@ -62,7 +62,7 @@
     },
     "doer": {
       "description": "General-purpose coding agent. Pick a model, give instructions, get results. No delegation, no complexity.",
-      "model": "opencode-go/glm-5.2",
+      "model": "openai/gpt-5.6-terra",
       "permission": {
         "read": "allow",
         "edit": "allow",
