@@ -30,7 +30,7 @@ shape; this skill covers what is true on this machine.
   Custom agents live under top-level `agents` (e.g. `agents.fullcontrol`,
   currently model `opencode-go/kimi-k2.7-code`, variant "none").
 - Prompt overrides: `opencode/oh-my-opencode-slim/orchestrator_append.md`
-  (flash-first delegation guidance; no model references in it).
+  (cost-aware delegation guidance for the Luna/MiMo specialist routing).
 
 ## How to check model slugs, auth, and thinking levels (do this FIRST)
 
@@ -104,13 +104,19 @@ ordered fallback chain (schema: `AgentOverrideConfigSchema` in
   (missing variants are ignored, not fatal).
 - Works identically in presets and for custom agents.
 
-## Current model assignments (after Aug 2026 change)
+## Current model assignments (after Aug 2026 cost-routing change)
 
+- **orchestrator**: `["opencode-go/mimo-v2.5", "openai/gpt-5.6-terra"]`,
+  variant `medium`. MiMo is primary and ignores the unsupported variant;
+  direct OpenAI Terra uses `medium` only on failover.
 - **oracle**: `["openai/gpt-5.6-sol", "opencode-go/kimi-k3"]`, variant `high`,
   skills `[simplify]`, mcps `[]`.
-- **designer**: `opencode-go/kimi-k3`, variant `max` (kimi-k3 only supports
-  `max`), skills `[agent-browser]`, mcps `[]`.
-- **observer**: `opencode-go/kimi-k3`, no variant, skills `[]`, mcps `[]`.
+- **librarian**, **explorer**, and **fixer**:
+  `["openai/gpt-5.6-luna", "opencode-go/mimo-v2.5"]`, variant `low`.
+  Luna is primary; MiMo is the failover route for provider/quota errors.
+- **designer**: `openai/gpt-5.6-terra`, variant `max`,
+  skills `[agent-browser]`, mcps `[]`.
+- **observer**: `openai/gpt-5.6-terra`, no variant, skills `[]`, mcps `[]`.
 - **fullcontrol** (custom agent, NOT in preset): `opencode-go/kimi-k2.7-code`,
   variant "none" — still legacy kimi; change it if user wants it on kimi-k3.
 

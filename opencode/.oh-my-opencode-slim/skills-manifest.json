@@ -1,24 +1,24 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-07T22:44:29.823Z",
+  "updatedAt": "2026-08-17T02:42:16.041Z",
   "skills": {
     "simplify": {
       "status": "customized",
-      "packageVersion": "2.1.0",
-      "sourceHash": "472c23b761bce345f4285a233daab78d27b30abb1edf7612ff27fb14815d7540",
+      "packageVersion": "2.2.14",
+      "sourceHash": "436c0d8f62b02ca03ee4dc7138d8e75274c8e2e0d9cf83ba8f26f522203f90cb",
       "lastManagedHash": "",
       "lastSeenHash": "eb4406670115e8c6c42ba23a942d4685ad4ab56dde33ac29c75189cfd4af30f5",
-      "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.1.0/simplify",
-      "updatedAt": "2026-08-07T22:44:29.819Z"
+      "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.2.14/simplify",
+      "updatedAt": "2026-08-17T02:42:16.038Z"
     },
     "codemap": {
       "status": "customized",
-      "packageVersion": "2.2.10",
-      "sourceHash": "583b1a1a7d20e546517b4092034720b3f72dd56e74c0b6c3f11adff68cdd4765",
+      "packageVersion": "2.2.14",
+      "sourceHash": "51702f75ea205292613a3f726ef68cdf35c9275b65467bc137f432c3041f1f56",
       "lastManagedHash": "",
       "lastSeenHash": "903c8fd39af78d3f9bb57e1653c2c1227c377b6dbe3220515b8845d0586c93b4",
-      "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.2.10/codemap",
-      "updatedAt": "2026-08-07T22:44:29.820Z"
+      "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.2.14/codemap",
+      "updatedAt": "2026-08-17T02:42:16.039Z"
     },
     "clonedeps": {
       "status": "customized",
@@ -27,15 +27,15 @@
       "lastManagedHash": "",
       "lastSeenHash": "7eb3de3317d1631dd29de10fa2d45e7db39ab014a56190dd6fe9530f8f45d7d1",
       "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.2.0/clonedeps",
-      "updatedAt": "2026-08-07T22:44:29.821Z"
+      "updatedAt": "2026-08-17T02:42:16.040Z"
     },
     "deepwork": {
       "status": "managed",
-      "packageVersion": "2.2.10",
-      "sourceHash": "3594b326767481884a953d40523a68d049bb94a2281d8dc205807bea93861a81",
-      "lastManagedHash": "3594b326767481884a953d40523a68d049bb94a2281d8dc205807bea93861a81",
-      "lastSeenHash": "3594b326767481884a953d40523a68d049bb94a2281d8dc205807bea93861a81",
-      "updatedAt": "2026-08-07T22:44:29.822Z"
+      "packageVersion": "2.2.14",
+      "sourceHash": "55667cf0df12d573c7618ca22f389da06e996defa892e4f3a55984455ca0d86c",
+      "lastManagedHash": "55667cf0df12d573c7618ca22f389da06e996defa892e4f3a55984455ca0d86c",
+      "lastSeenHash": "55667cf0df12d573c7618ca22f389da06e996defa892e4f3a55984455ca0d86c",
+      "updatedAt": "2026-08-17T02:42:16.040Z"
     },
     "reflect": {
       "status": "customized",
@@ -44,15 +44,15 @@
       "lastManagedHash": "",
       "lastSeenHash": "ba978784b7af3ce19f3ffc27ffa365804371e2076560ad0a039303dab59ad560",
       "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.2.9/reflect",
-      "updatedAt": "2026-08-07T22:44:29.822Z"
+      "updatedAt": "2026-08-17T02:42:16.041Z"
     },
     "oh-my-opencode-slim": {
       "status": "managed",
-      "packageVersion": "2.2.10",
+      "packageVersion": "2.2.14",
       "sourceHash": "17ba8926f26d629aa3e471bbb293832aa529daf2fef8f3065634fb4d2758ebdb",
       "lastManagedHash": "17ba8926f26d629aa3e471bbb293832aa529daf2fef8f3065634fb4d2758ebdb",
       "lastSeenHash": "17ba8926f26d629aa3e471bbb293832aa529daf2fef8f3065634fb4d2758ebdb",
-      "updatedAt": "2026-08-07T22:44:29.822Z"
+      "updatedAt": "2026-08-17T02:42:16.041Z"
     },
     "release-smoke-test": {
       "status": "managed",
@@ -64,19 +64,19 @@
     },
     "worktrees": {
       "status": "managed",
-      "packageVersion": "2.2.10",
-      "sourceHash": "26f7f244bdb075442053a0dd3c9d19c709d10b1c7e4dfbdf9393544eb1f9c1ff",
-      "lastManagedHash": "26f7f244bdb075442053a0dd3c9d19c709d10b1c7e4dfbdf9393544eb1f9c1ff",
-      "lastSeenHash": "26f7f244bdb075442053a0dd3c9d19c709d10b1c7e4dfbdf9393544eb1f9c1ff",
-      "updatedAt": "2026-08-07T22:44:29.823Z"
+      "packageVersion": "2.2.14",
+      "sourceHash": "86a35e436be5807e99b8a3c24376f8c99d0397ddb338f18673c9b0806152baab",
+      "lastManagedHash": "86a35e436be5807e99b8a3c24376f8c99d0397ddb338f18673c9b0806152baab",
+      "lastSeenHash": "86a35e436be5807e99b8a3c24376f8c99d0397ddb338f18673c9b0806152baab",
+      "updatedAt": "2026-08-17T02:42:16.041Z"
     },
     "verification-planning": {
       "status": "managed",
-      "packageVersion": "2.2.10",
-      "sourceHash": "7edf02531e69f6a88b10778534f655ade675bacfb614c9d416dd88e134505bb8",
-      "lastManagedHash": "7edf02531e69f6a88b10778534f655ade675bacfb614c9d416dd88e134505bb8",
-      "lastSeenHash": "7edf02531e69f6a88b10778534f655ade675bacfb614c9d416dd88e134505bb8",
-      "updatedAt": "2026-08-07T22:44:29.822Z"
+      "packageVersion": "2.2.14",
+      "sourceHash": "dde176518c405e73cde42e95b2b4e032a5832d991b73a41eb68cedd0c2d60013",
+      "lastManagedHash": "dde176518c405e73cde42e95b2b4e032a5832d991b73a41eb68cedd0c2d60013",
+      "lastSeenHash": "dde176518c405e73cde42e95b2b4e032a5832d991b73a41eb68cedd0c2d60013",
+      "updatedAt": "2026-08-17T02:42:16.041Z"
     }
   }
 }
