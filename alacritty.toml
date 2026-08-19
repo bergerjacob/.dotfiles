@@ -18,5 +18,7 @@ bindings = [
     { key = "Return", mods = "Shift", chars = "\n" },
     { key = "Back", mods = "Control", chars = "\u0017" },
     { key = "Return", mods = "Alt", chars = "\u001b[13;3u" },
-    { key = "Return", mods = "Control", chars = "\u001b[13;5u" }
+    { key = "Return", mods = "Control", chars = "\u001b[13;5u" },
+    # Encode Alt+Shift+G explicitly; legacy terminals reduce it to ESC G.
+    { key = "G", mods = "Alt|Shift", chars = "\u001b[103;4u" }
 ]

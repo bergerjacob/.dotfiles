@@ -125,6 +125,15 @@ link_path "$DOTFILES_DIR/gtk-4.0/settings.ini" "$HOME/.config/gtk-4.0/settings.i
 link_path "$DOTFILES_DIR/mimeapps.list" "$HOME/.config/mimeapps.list"
 link_path "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
 link_path "$DOTFILES_DIR/opencode" "$HOME/.config/opencode"
+
+# Keep Pi credentials, sessions, and installed package data machine-local while
+# sharing only the declarative configuration and user-authored resources.
+for pi_entry in AGENTS.md agents extensions keybindings.json models.json prompts settings.json skills themes; do
+  link_path "$DOTFILES_DIR/pi/agent/$pi_entry" "$HOME/.pi/agent/$pi_entry"
+done
+# DCP runtime state and statistics remain machine-local.
+link_path "$DOTFILES_DIR/pi/agent/pi-dcp.json" "$HOME/.pi-dcp/config.json"
+
 link_path "$DOTFILES_DIR/sway/config" "$HOME/.config/sway/config"
 link_path "$DOTFILES_DIR/waybar/config" "$HOME/.config/waybar/config"
 link_path "$DOTFILES_DIR/waybar/style.css" "$HOME/.config/waybar/style.css"

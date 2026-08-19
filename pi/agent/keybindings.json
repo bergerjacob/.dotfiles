@@ -1,1 +1,10 @@
-{}
+{
+  "tui.altScreen.halfPageUp": "alt+u",
+  "tui.altScreen.halfPageDown": "alt+d",
+  "tui.altScreen.lineUp": "alt+y",
+  "tui.altScreen.lineDown": "alt+e",
+  "tui.altScreen.previousPrompt": "alt+k",
+  "tui.altScreen.nextPrompt": "alt+j",
+  "tui.altScreen.top": "alt+g",
+  "tui.altScreen.bottom": "alt+shift+g"
+}

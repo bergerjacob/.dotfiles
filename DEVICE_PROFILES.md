@@ -40,6 +40,15 @@ Profile `config/` and `bin/` directories mirror `~/.config` and `~/.local/bin`.
 Files placed there are linked automatically. Shared files use the explicit list
 in `setup-symlinks.sh`, which keeps their public locations easy to audit.
 
+Pi's shared declarative configuration lives below `pi/agent/`. The linker links
+its settings, keybindings, agents, and user-authored resource directories
+individually into `~/.pi/agent/`. It intentionally does not link that entire
+runtime directory: provider credentials, sessions, model caches, and installed
+package data remain local to each machine. Packages declared in the shared Pi
+settings are installed into the machine-local package directory by Pi. Pi-DCP's
+shared config is linked separately to `~/.pi-dcp/config.json`; its session state,
+statistics, and generated prompts remain machine-local.
+
 Sway loads the shared `sway/config` and includes the selected profile as
 `~/.config/sway/machine.conf`. The profile include defines output names, modes,
 scaling, hardware input settings, and hardware-only bindings. `i3status` is a

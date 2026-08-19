@@ -1,11 +1,33 @@
 {
-  "lastChangelogVersion": "0.80.10",
-  "defaultProvider": "opencode-go",
-  "defaultModel": "kimi-k3",
+  "lastChangelogVersion": "0.84.2",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
   "defaultThinkingLevel": "high",
   "theme": "dark",
+  "tuiMode": "fullscreen",
   "skills": [
-    "+skills/agent-browser/SKILL.md"
+    "!skills/agent-browser/**",
+    "!skills/remotion-*/**"
   ],
-  "hideThinkingBlock": false
+  "hideThinkingBlock": false,
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 32768,
+    "keepRecentTokens": 60000
+  },
+  "subagents": {
+    "disableBuiltins": true
+  },
+  "packages": [
+    {
+      "source": "npm:pi-subagents",
+      "skills": [],
+      "prompts": []
+    },
+    "npm:pi-web-access",
+    "npm:@latentminds/pi-quotas",
+    "npm:@ogulcancelik/pi-tmux",
+    "npm:pi-btw",
+    "npm:@davecodes/pi-dcp"
+  ]
 }

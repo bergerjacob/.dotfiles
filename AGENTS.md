@@ -14,6 +14,7 @@ Shared configuration stays at the repository root or in an application directory
 - `sway/`: shared Sway behavior and helper scripts.
 - `chrome/`: shared desktop entries that call the selected machine's `dotfiles-chrome` wrapper.
 - `nvim/`, `opencode/`, `waybar/`, and similar directories: shared application configuration.
+- `pi/agent/`: shared declarative Pi settings, agents, keybindings, and user-authored resources; credentials, sessions, and installed package data remain machine-local.
 - `packages`: packages required on both machines.
 - `services`: system services required on both machines.
 
@@ -69,6 +70,7 @@ For link-only updates or inspection:
 - Move regular files aside with a numbered `.pre-dotfiles` suffix rather than deleting them.
 - Link profile `config/` and `bin/` trees generically so new files do not require linker changes.
 - Keep the explicit shared-link list easy to audit.
+- Link only the managed entries below `pi/agent/`; never replace the whole `~/.pi/agent` directory because it also contains local credentials, sessions, model caches, and installed packages.
 
 Do not make links into `pc/system/` or `laptop/system/`. Those files must be copied to `/` with root ownership by `setup.sh`.
 
@@ -127,7 +129,7 @@ At minimum, run these checks after relevant changes:
 ```bash
 bash -n setup.sh setup-symlinks.sh install-fonts.sh laptop/bin/* pc/bin/* sway/*.sh
 zsh -n zshrc
-jq empty opencode/oh-my-opencode-slim.json opencode/opencode.json
+jq empty opencode/oh-my-opencode-slim.json opencode/opencode.json pi/agent/settings.json pi/agent/keybindings.json pi/agent/models.json pi/agent/pi-dcp.json
 git diff --check
 ```
 

@@ -1,0 +1,44 @@
+{
+  "enabled": true,
+  "debug": false,
+  "pruneNotification": "minimal",
+  "experimental": {
+    "customPrompts": false
+  },
+  "manualMode": {
+    "enabled": false,
+    "automaticStrategies": true
+  },
+  "turnProtection": {
+    "enabled": true,
+    "turns": 4
+  },
+  "compress": {
+    "mode": "range",
+    "permission": "allow",
+    "minContextLimit": "30%",
+    "maxContextLimit": "60%",
+    "modelMinLimits": {
+      "openai-codex/gpt-5.6-sol": "30%"
+    },
+    "modelMaxLimits": {
+      "openai-codex/gpt-5.6-sol": "60%"
+    },
+    "nudgeEveryTurns": 5,
+    "nudgeFrequency": 3,
+    "iterationNudgeThreshold": 8,
+    "nudgeForce": "strong",
+    "protectedTools": []
+  },
+  "strategies": {
+    "deduplication": {
+      "enabled": true,
+      "protectedTools": []
+    },
+    "purgeErrors": {
+      "enabled": true,
+      "turns": 2,
+      "protectedTools": []
+    }
+  }
+}
