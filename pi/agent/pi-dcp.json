@@ -11,22 +11,22 @@
   },
   "turnProtection": {
     "enabled": true,
-    "turns": 4
+    "turns": 1
   },
   "compress": {
     "mode": "range",
     "permission": "allow",
-    "minContextLimit": "30%",
-    "maxContextLimit": "60%",
+    "minContextLimit": "25%",
+    "maxContextLimit": "50%",
     "modelMinLimits": {
-      "openai-codex/gpt-5.6-sol": "30%"
+      "openai-codex/gpt-5.6-sol": "25%"
     },
     "modelMaxLimits": {
-      "openai-codex/gpt-5.6-sol": "60%"
+      "openai-codex/gpt-5.6-sol": "50%"
     },
-    "nudgeEveryTurns": 5,
-    "nudgeFrequency": 3,
-    "iterationNudgeThreshold": 8,
+    "nudgeEveryTurns": 1,
+    "nudgeFrequency": 1,
+    "iterationNudgeThreshold": 6,
     "nudgeForce": "strong",
     "protectedTools": []
   },

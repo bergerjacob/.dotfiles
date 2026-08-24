@@ -14,6 +14,10 @@ Choose the lowest suitable subagent tier:
 
 Avoid parallel writers to the same files. Use subagents to isolate useful work and context, not merely to add another layer of prompting.
 
+## Context management
+
+Treat pi-dcp strong, hard, and iteration nudges as action directives rather than informational notices. When an older discovery, validation, retry, or implementation work-stream is closed, call `compress` with a lossless factual summary before continuing. Do not wait for Pi's built-in whole-session compaction, and do not compress the current protected turn or in-flight work.
+
 ## Long-running work
 
 For experiments or commands expected to run longer than a few minutes:
