@@ -28,6 +28,7 @@
     "npm:@latentminds/pi-quotas",
     "npm:@ogulcancelik/pi-tmux",
     "npm:pi-btw",
-    "npm:@davecodes/pi-dcp"
+    "npm:@davecodes/pi-dcp",
+    "npm:pi-sandbox"
   ]
 }

@@ -1,3 +1,27 @@
 {
-  "providers": {}
+  "providers": {
+    "llama-local": {
+      "baseUrl": "http://127.0.0.1:8000/v1",
+      "api": "openai-completions",
+      "apiKey": "llama.cpp",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false,
+        "maxTokensField": "max_tokens",
+        "thinkingTokenBudgetField": "thinking_budget_tokens"
+      },
+      "models": [
+        {
+          "id": "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL",
+          "name": "Qwen3.8-27B (local 262k)",
+          "reasoning": true,
+          "contextWindow": 262144,
+          "maxTokens": 32768,
+          "compat": {
+            "thinkingFormat": "chat-template"
+          }
+        }
+      ]
+    }
+  }
 }

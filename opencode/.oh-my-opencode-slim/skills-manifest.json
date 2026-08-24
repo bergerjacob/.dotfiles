@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-17T02:42:16.041Z",
+  "updatedAt": "2026-08-20T18:47:29.013Z",
   "skills": {
     "simplify": {
       "status": "customized",
@@ -9,7 +9,7 @@
       "lastManagedHash": "",
       "lastSeenHash": "eb4406670115e8c6c42ba23a942d4685ad4ab56dde33ac29c75189cfd4af30f5",
       "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.2.14/simplify",
-      "updatedAt": "2026-08-17T02:42:16.038Z"
+      "updatedAt": "2026-08-20T18:47:29.012Z"
     },
     "codemap": {
       "status": "customized",
@@ -18,7 +18,7 @@
       "lastManagedHash": "",
       "lastSeenHash": "903c8fd39af78d3f9bb57e1653c2c1227c377b6dbe3220515b8845d0586c93b4",
       "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.2.14/codemap",
-      "updatedAt": "2026-08-17T02:42:16.039Z"
+      "updatedAt": "2026-08-20T18:47:29.013Z"
     },
     "clonedeps": {
       "status": "customized",
@@ -27,15 +27,15 @@
       "lastManagedHash": "",
       "lastSeenHash": "7eb3de3317d1631dd29de10fa2d45e7db39ab014a56190dd6fe9530f8f45d7d1",
       "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.2.0/clonedeps",
-      "updatedAt": "2026-08-17T02:42:16.040Z"
+      "updatedAt": "2026-08-20T18:47:29.013Z"
     },
     "deepwork": {
       "status": "managed",
-      "packageVersion": "2.2.14",
+      "packageVersion": "2.2.15",
       "sourceHash": "55667cf0df12d573c7618ca22f389da06e996defa892e4f3a55984455ca0d86c",
       "lastManagedHash": "55667cf0df12d573c7618ca22f389da06e996defa892e4f3a55984455ca0d86c",
       "lastSeenHash": "55667cf0df12d573c7618ca22f389da06e996defa892e4f3a55984455ca0d86c",
-      "updatedAt": "2026-08-17T02:42:16.040Z"
+      "updatedAt": "2026-08-20T18:47:29.013Z"
     },
     "reflect": {
       "status": "customized",
@@ -44,15 +44,15 @@
       "lastManagedHash": "",
       "lastSeenHash": "ba978784b7af3ce19f3ffc27ffa365804371e2076560ad0a039303dab59ad560",
       "stagedPath": "/home/bergerj/.config/opencode/.oh-my-opencode-slim/skill-updates/2.2.9/reflect",
-      "updatedAt": "2026-08-17T02:42:16.041Z"
+      "updatedAt": "2026-08-20T18:47:29.013Z"
     },
     "oh-my-opencode-slim": {
       "status": "managed",
-      "packageVersion": "2.2.14",
+      "packageVersion": "2.2.15",
       "sourceHash": "17ba8926f26d629aa3e471bbb293832aa529daf2fef8f3065634fb4d2758ebdb",
       "lastManagedHash": "17ba8926f26d629aa3e471bbb293832aa529daf2fef8f3065634fb4d2758ebdb",
       "lastSeenHash": "17ba8926f26d629aa3e471bbb293832aa529daf2fef8f3065634fb4d2758ebdb",
-      "updatedAt": "2026-08-17T02:42:16.041Z"
+      "updatedAt": "2026-08-20T18:47:29.013Z"
     },
     "release-smoke-test": {
       "status": "managed",
@@ -64,19 +64,19 @@
     },
     "worktrees": {
       "status": "managed",
-      "packageVersion": "2.2.14",
+      "packageVersion": "2.2.15",
       "sourceHash": "86a35e436be5807e99b8a3c24376f8c99d0397ddb338f18673c9b0806152baab",
       "lastManagedHash": "86a35e436be5807e99b8a3c24376f8c99d0397ddb338f18673c9b0806152baab",
       "lastSeenHash": "86a35e436be5807e99b8a3c24376f8c99d0397ddb338f18673c9b0806152baab",
-      "updatedAt": "2026-08-17T02:42:16.041Z"
+      "updatedAt": "2026-08-20T18:47:29.013Z"
     },
     "verification-planning": {
       "status": "managed",
-      "packageVersion": "2.2.14",
+      "packageVersion": "2.2.15",
       "sourceHash": "dde176518c405e73cde42e95b2b4e032a5832d991b73a41eb68cedd0c2d60013",
       "lastManagedHash": "dde176518c405e73cde42e95b2b4e032a5832d991b73a41eb68cedd0c2d60013",
       "lastSeenHash": "dde176518c405e73cde42e95b2b4e032a5832d991b73a41eb68cedd0c2d60013",
-      "updatedAt": "2026-08-17T02:42:16.041Z"
+      "updatedAt": "2026-08-20T18:47:29.013Z"
     }
   }
 }
