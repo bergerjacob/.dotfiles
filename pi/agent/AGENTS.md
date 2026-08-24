@@ -13,3 +13,14 @@ Choose the lowest suitable subagent tier:
 - `oracle`: narrow independent second opinions on consequential, high-risk, or genuinely difficult decisions. Prefer concise questions and do not use it for routine work.
 
 Avoid parallel writers to the same files. Use subagents to isolate useful work and context, not merely to add another layer of prompting.
+
+## Long-running work
+
+For experiments or commands expected to run longer than a few minutes:
+
+- Use one named tmux pane for the real long-running process only when live terminal output is useful. Do not create tmux panes merely to poll, babysit, or duplicate monitoring.
+- When completion matters, use one cheap async watcher that performs short polling calls (at most 30 seconds each), then register a nonblocking wait subscription so completion wakes the parent.
+- Never make a watcher issue one long blocking sleep or poll command; this triggers the tool watchdog.
+- Track every tmux pane you create. Stop it as soon as it is no longer needed, and clean up obsolete panes before returning control to the user. A pane may remain running only when its underlying process intentionally must outlive the turn.
+- The `tmux-auto-zoom` extension hides any intentionally surviving managed panes by zooming Pi when the agent settles. Do not unzoom or otherwise expose background panes just to inspect them; use `tmux read`.
+- Report completion, failure, or genuine attention needs rather than ordinary progress.
