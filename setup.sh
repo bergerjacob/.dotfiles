@@ -3,15 +3,20 @@ set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROFILE=""
+MINIMAL=false
 LINK_ONLY=false
 
 usage() {
   cat <<'EOF'
 Usage: ./setup.sh <laptop|pc> [--link-only]
+       ./setup.sh minimal-dev
 
-Installs Debian packages, deploys shared and profile system files, enables
-declared services, and links the selected dotfiles. Use --link-only to skip
-all privileged package and system configuration.
+The laptop and pc modes install Debian packages, deploy system files, enable
+services, and link the selected profile. Use --link-only to skip privileged
+package and system configuration.
+
+The minimal-dev mode is for a user-writable headless server. It installs no
+packages, uses no sudo, and copies only the OpenCode and Pi configuration.
 EOF
 }
 
@@ -21,6 +26,11 @@ while [ "$#" -gt 0 ]; do
       [ -z "$PROFILE" ] || { printf 'Only one profile may be selected.\n' >&2; exit 2; }
       PROFILE="$1"
       ;;
+    minimal-dev)
+      [ -z "$PROFILE" ] || { printf 'Only one profile may be selected.\n' >&2; exit 2; }
+      PROFILE="$1"
+      MINIMAL=true
+      ;;
     --link-only) LINK_ONLY=true ;;
     -h|--help) usage; exit 0 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 2 ;;
@@ -29,6 +39,89 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$PROFILE" ] || { usage >&2; exit 2; }
+
+minimal_backup_path() {
+  local path="$1"
+  local backup="${path}.pre-dotfiles"
+  local number=1
+
+  while [ -e "$backup" ] || [ -L "$backup" ]; do
+    backup="${path}.pre-dotfiles.${number}"
+    number=$((number + 1))
+  done
+
+  printf '[setup-minimal-dev] moving existing %s to %s\n' "$path" "$backup"
+  mv -- "$path" "$backup"
+}
+
+minimal_copy_file() {
+  local source="$1"
+  local destination="$2"
+  local source_real destination_real
+
+  if [ -L "$destination" ]; then
+    source_real="$(readlink -f "$source")"
+    destination_real="$(readlink -f "$destination" 2>/dev/null || true)"
+    if [ "$source_real" = "$destination_real" ]; then
+      printf '[setup-minimal-dev] already present %s\n' "$destination"
+      return
+    fi
+    minimal_backup_path "$destination"
+  elif [ -e "$destination" ]; then
+    if cmp -s "$source" "$destination"; then
+      printf '[setup-minimal-dev] already present %s\n' "$destination"
+      return
+    fi
+    minimal_backup_path "$destination"
+  fi
+
+  install -D -m "$(stat -c '%a' "$source")" "$source" "$destination"
+  printf '[setup-minimal-dev] %s <- %s\n' "$destination" "$source"
+}
+
+minimal_copy_tree() {
+  local source_root="$1"
+  local destination_root="$2"
+  local source relative
+
+  [ -d "$source_root" ] || return 0
+  if [ -L "$destination_root" ] && [ "$(readlink -f "$destination_root" 2>/dev/null || true)" != "$(readlink -f "$source_root")" ]; then
+    minimal_backup_path "$destination_root"
+  elif [ -e "$destination_root" ] && [ ! -d "$destination_root" ]; then
+    minimal_backup_path "$destination_root"
+  fi
+  mkdir -p "$destination_root"
+
+  while IFS= read -r -d '' source; do
+    relative="${source#"$source_root"/}"
+    minimal_copy_file "$source" "$destination_root/$relative"
+  done < <(find "$source_root" -type f -print0 | sort -z)
+}
+
+setup_minimal() {
+  local pi_entry
+
+  printf '[setup-minimal-dev] no packages, sudo, system files, services, fonts, or general symlinks\n'
+  minimal_copy_tree "$DOTFILES_DIR/opencode" "$HOME/.config/opencode"
+
+  for pi_entry in AGENTS.md agents extensions keybindings.json models.json prompts sandbox.json settings.json skills themes; do
+    if [ -d "$DOTFILES_DIR/pi/agent/$pi_entry" ]; then
+      minimal_copy_tree "$DOTFILES_DIR/pi/agent/$pi_entry" "$HOME/.pi/agent/$pi_entry"
+    elif [ -f "$DOTFILES_DIR/pi/agent/$pi_entry" ]; then
+      minimal_copy_file "$DOTFILES_DIR/pi/agent/$pi_entry" "$HOME/.pi/agent/$pi_entry"
+    fi
+  done
+  minimal_copy_file "$DOTFILES_DIR/pi/agent/pi-dcp.json" "$HOME/.pi-dcp/config.json"
+
+  printf '[setup-minimal-dev] complete\n'
+}
+
+if [ "$MINIMAL" = true ]; then
+  [ "$LINK_ONLY" = false ] || { printf 'minimal-dev mode does not use --link-only\n' >&2; exit 2; }
+  setup_minimal
+  exit 0
+fi
+
 [ -d "$DOTFILES_DIR/$PROFILE" ] || { printf 'Missing profile: %s\n' "$PROFILE" >&2; exit 1; }
 
 read_manifest() {

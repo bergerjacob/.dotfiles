@@ -17,7 +17,7 @@ The repository has one shared configuration and two explicit machine profiles:
 ```
 
 There is no hostname detection and no runtime profile logic. Select exactly one
-profile when setting up a machine:
+full profile when setting up a desktop machine:
 
 ```bash
 ./setup.sh laptop
@@ -35,6 +35,27 @@ or privileged changes:
 # or inspect first
 ./setup-symlinks.sh laptop --dry-run
 ```
+
+For a headless Debian/Ubuntu server where the user cannot use `sudo`, use the
+separate minimal-dev mode:
+
+```bash
+./setup.sh minimal-dev
+```
+
+Minimal-dev mode installs no packages, touches no system files or services, and
+runs no general dotfile linker. It copies only the regular files below
+`opencode/` into `~/.config/opencode/`, these managed declarative entries below
+`pi/agent/` into `~/.pi/agent/`:
+
+- `AGENTS.md`, `keybindings.json`, `models.json`, `sandbox.json`, and
+  `settings.json`
+- `agents/`, `extensions/`, `prompts/`, `skills/`, and `themes/`
+
+It also copies `pi/agent/pi-dcp.json` to `~/.pi-dcp/config.json`. Existing
+different files are backed up with a numbered `.pre-dotfiles` suffix. OpenCode,
+Pi, and any required package dependencies must already be installed on the
+server.
 
 Profile `config/` and `bin/` directories mirror `~/.config` and `~/.local/bin`.
 Files placed there are linked automatically. Shared files use the explicit list

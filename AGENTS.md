@@ -1,9 +1,10 @@
 # Dotfiles Agent Guide
 
-This repository manages two Debian-based Sway systems:
+This repository manages two Debian-based Sway systems plus a minimal headless setup:
 
 - `laptop`: AMD ThinkPad using native Wayland applications and a scaled internal display.
 - `pc`: NVIDIA desktop using Sway with intentional XWayland compatibility for selected applications.
+- `minimal-dev`: user-writable headless setup for OpenCode and Pi only; it does not require sudo.
 
 Keep the repository predictable. Prefer explicit profiles, ordinary files, and small includes over hostname detection, generated configuration, or condition-heavy scripts.
 
@@ -47,12 +48,17 @@ Do not add hostname checks, GPU detection, or `if laptop ... else pc ...` branch
 
 ## Setup And Symlinks
 
-Always select a profile explicitly:
+Always select a profile explicitly for a desktop setup:
 
 ```bash
 ./setup.sh laptop
 ./setup.sh pc
 ```
+
+For a headless server without sudo, use `./setup.sh minimal-dev`. This copies only
+OpenCode, managed Pi configuration, and Pi-DCP configuration; it does not
+install packages, touch system files, enable services, or run the general
+symlink setup.
 
 For link-only updates or inspection:
 
