@@ -1,0 +1,35 @@
+{
+  "enabled": true,
+  "filesystem": {
+    "allowRead": [
+      ".",
+      "~"
+    ],
+    "allowWrite": [
+      ".",
+      "/tmp",
+      "~/.pi/web-search.json"
+    ],
+    "denyRead": [],
+    "denyWrite": [
+      "~/.ssh",
+      "~/.gnupg",
+      "~/.config",
+      "~/.local/share",
+      ".env",
+      ".env.*",
+      "*.pem",
+      "*.key"
+    ]
+  },
+  "network": {
+    "allowedDomains": [
+      "openrouter.ai",
+      "generativelanguage.googleapis.com",
+      "api.elevenlabs.io",
+      "github.com",
+      "api.z.ai",
+      "example.com"
+    ]
+  }
+}
