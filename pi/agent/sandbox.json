@@ -1,32 +1,25 @@
 {
   "enabled": true,
+  "allowBrowserProcess": true,
+  "network": {
+    "allowLocalBinding": true,
+    "allowAllUnixSockets": true,
+    "allowUnauthenticatedSocksProxy": true,
+    "allowedDomains": ["*"],
+    "deniedDomains": []
+  },
   "filesystem": {
-    "allowRead": [
-      ".",
-      "~"
-    ],
-    "allowWrite": [
-      ".",
-      "/tmp"
-    ],
+    "allowRead": [".", "~"],
+    "allowWrite": [".", "/tmp", "~"],
     "denyRead": [],
     "denyWrite": [
       "~/.ssh",
       "~/.gnupg",
-      "~/.config",
-      "~/.local/share",
+      "~/.pi/agent/auth.json",
       ".env",
       ".env.*",
       "*.pem",
       "*.key"
-    ]
-  },
-  "network": {
-    "allowedDomains": [
-      "openrouter.ai",
-      "generativelanguage.googleapis.com",
-      "api.elevenlabs.io",
-      "github.com"
     ]
   }
 }

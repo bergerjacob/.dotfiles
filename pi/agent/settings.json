@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.84.3",
-  "defaultProvider": "openrouter",
-  "defaultModel": "stealth/ox-alpha",
+  "defaultProvider": "zai",
+  "defaultModel": "glm-5.3-flash",
   "defaultThinkingLevel": "high",
   "theme": "dark",
   "tuiMode": "fullscreen",
