@@ -2,7 +2,6 @@
 name: fast
 aliases: cheap, low, small
 description: Fast, lower-cost general agent for code exploration, external research, mechanical edits, bounded tasks, and repetitive implementation or validation work.
-model: openai-codex/gpt-5.6-luna
 thinking: low
 systemPromptMode: append
 inheritProjectContext: true

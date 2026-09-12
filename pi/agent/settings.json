@@ -18,6 +18,15 @@
   "subagents": {
     "disableBuiltins": true
   },
+  "retry": {
+    "enabled": true,
+    "maxRetries": 12,
+    "baseDelayMs": 10000,
+    "provider": {
+      "maxRetries": 0,
+      "maxRetryDelayMs": 0
+    }
+  },
   "packages": [
     {
       "source": "npm:pi-subagents",
@@ -29,6 +38,13 @@
     "npm:@ogulcancelik/pi-tmux",
     "npm:pi-btw",
     "npm:@davecodes/pi-dcp",
-    "npm:pi-sandbox"
+    "npm:pi-sandbox",
+    {
+      "source": "git:github.com/cgxeiji/pi-emote",
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
   ]
 }

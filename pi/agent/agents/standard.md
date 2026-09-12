@@ -2,8 +2,7 @@
 name: standard
 aliases: medium
 description: General capable agent for substantial analysis, design and visual judgment, multi-file implementation, focused review, and moderately ambiguous work.
-model: openai-codex/gpt-5.6-terra
-thinking: medium
+thinking: high
 systemPromptMode: append
 inheritProjectContext: true
 inheritSkills: false
