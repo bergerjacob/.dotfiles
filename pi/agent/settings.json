@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.84.3",
   "defaultProvider": "zai",
-  "defaultModel": "glm-5.3-flash",
+  "defaultModel": "glm-5.3",
   "defaultThinkingLevel": "high",
   "theme": "dark",
   "tuiMode": "fullscreen",
