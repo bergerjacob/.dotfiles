@@ -248,30 +248,66 @@ type CoreSelectorComponent = Container & {
   dispose?(): void;
 };
 
-type CoreModelSelector = new (
+// ModelRuntime surface backed by the extension registry; refresh is a no-op
+// so the component just lists the current snapshot.
+interface CoreModelRuntime {
+  getAvailableSnapshot(): Model<any>[];
+  getModel(provider: string, id: string): Model<any> | undefined;
+  getError(): string | undefined;
+  refresh(): Promise<{ errors: Map<string, unknown> }>;
+}
+
+// pi <= 0.84.x: settingsManager sits between currentModel and modelRuntime.
+type LegacyModelSelector = new (
   tui: { requestRender(): void },
   currentModel: Model<any> | undefined,
-  settings: unknown,
-  modelRuntime: unknown,
+  settings: { setDefaultModelAndProvider(provider: string, id: string): void },
+  modelRuntime: CoreModelRuntime,
   scopedModels: ReadonlyArray<{ model: Model<any>; thinkingLevel?: string }>,
   onSelect: (model: Model<any>) => void,
   onCancel: () => void,
   initialSearchInput?: string,
 ) => CoreSelectorComponent;
 
-let coreSelectorCtor: CoreModelSelector | undefined;
+// pi >= 0.85: settingsManager was removed; "save as default" became the
+// optional onSelectAsDefault callback (left unset so picks are never persisted).
+type ModernModelSelector = new (
+  tui: { requestRender(): void },
+  currentModel: Model<any> | undefined,
+  modelRuntime: CoreModelRuntime,
+  scopedModels: ReadonlyArray<{ model: Model<any>; thinkingLevel?: string }>,
+  onSelect: (model: Model<any>) => void,
+  onCancel: () => void,
+  initialSearchInput?: string,
+  onSelectAsDefault?: (model: Model<any>) => void,
+  defaultModel?: { provider: string; id: string },
+) => CoreSelectorComponent;
+
+interface CoreModelSelector {
+  ctor: LegacyModelSelector | ModernModelSelector;
+  // pi 0.85 dropped the settingsManager constructor parameter; pick the
+  // argument layout from the installed package version.
+  legacy: boolean;
+}
+
+let coreSelector: CoreModelSelector | undefined;
 
 async function loadCoreModelSelector(): Promise<CoreModelSelector> {
-  if (!coreSelectorCtor) {
+  if (!coreSelector) {
     // Deep-import pi's own ModelSelectorComponent. Absolute path bypasses the
     // package "exports" map; the module's theme is a globalThis singleton, so
     // it follows the active theme.
     const url = pathToFileURL(
       join(getPackageDir(), "dist", "modes", "interactive", "components", "model-selector.js"),
     ).href;
-    coreSelectorCtor = (await import(url)).ModelSelectorComponent as CoreModelSelector;
+    const ctor = (await import(url)).ModelSelectorComponent as LegacyModelSelector | ModernModelSelector;
+    const pkg = JSON.parse(await readFile(join(getPackageDir(), "package.json"), "utf8")) as {
+      version?: string;
+    };
+    const [major = 0, minor = 0] = (pkg.version ?? "").split(".").map(Number);
+    coreSelector = { ctor, legacy: major === 0 && minor < 85 };
   }
-  return coreSelectorCtor;
+  return coreSelector;
 }
 
 // ---------------------------------------------------------------------------
@@ -443,23 +479,36 @@ export class CustomModeEditor extends Container {
           row.model && slash > 0
             ? this.deps.registry.find(row.model.slice(0, slash), row.model.slice(slash + 1))
             : undefined;
-        const picker = new this.deps.coreSelector(
-          this.deps.tui,
-          current,
-          // Shim: never persist the picked model as the default model.
-          { setDefaultModelAndProvider: () => {} },
-          // ModelRuntime surface backed by the extension registry; refresh is
-          // a no-op so the component just lists the current snapshot.
-          {
-            getAvailableSnapshot: () => this.deps.registry.getAvailable(),
-            getModel: (provider: string, id: string) => this.deps.registry.find(provider, id),
-            getError: () => undefined,
-            refresh: async () => ({ errors: new Map() }),
-          },
-          this.deps.scopedModels,
-          (model) => finish(`${model.provider}/${model.id}`),
-          () => finish(),
-        );
+        const runtime: CoreModelRuntime = {
+          getAvailableSnapshot: () => this.deps.registry.getAvailable(),
+          getModel: (provider: string, id: string) => this.deps.registry.find(provider, id),
+          getError: () => undefined,
+          refresh: async () => ({ errors: new Map() }),
+        };
+        const select = (model: Model<any>): void => finish(`${model.provider}/${model.id}`);
+        const cancel = (): void => finish();
+        const { ctor, legacy } = this.deps.coreSelector;
+        // Shim: never persist the picked model as the default model. On
+        // <= 0.84.x that means a no-op settingsManager; on >= 0.85 it means
+        // leaving onSelectAsDefault unset.
+        const picker = legacy
+          ? new (ctor as LegacyModelSelector)(
+              this.deps.tui,
+              current,
+              { setDefaultModelAndProvider: () => {} },
+              runtime,
+              this.deps.scopedModels,
+              select,
+              cancel,
+            )
+          : new (ctor as ModernModelSelector)(
+              this.deps.tui,
+              current,
+              runtime,
+              this.deps.scopedModels,
+              select,
+              cancel,
+            );
         this.attach(picker);
       } else {
         const items = this.deps.registry
