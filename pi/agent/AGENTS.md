@@ -29,6 +29,12 @@ For experiments or commands expected to run longer than a few minutes:
 - The `tmux-auto-zoom` extension hides any intentionally surviving managed panes by zooming Pi when the agent settles. Do not unzoom or otherwise expose background panes just to inspect them; use `tmux read`.
 - Report completion, failure, or genuine attention needs rather than ordinary progress.
 
+## Git discipline
+
+- Never push to GitHub or any other remote unless explicitly told to. Creating local commits is fine when it fits the task; pushing is always a separate, explicit instruction.
+- Before committing in an unfamiliar repository, check `git log` and match the naming pattern of recent commits in that repo.
+- Keep commit titles short: a few lowercase words forming a short sentence describing the change, as concise as possible. No conventional-commit prefixes such as `feat:`, `fix:`, or similar tags.
+
 ## Harness setup issues
 
 When you hit a quirk or defect in the local harness or machine setup itself (pi extensions, tmux behavior, agent-browser, dotfiles tooling, broken environment wiring), do not fix it in the dotfiles repository. Record it in `~/.dotfiles/TODO.md` instead:
