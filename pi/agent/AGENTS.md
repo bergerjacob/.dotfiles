@@ -28,3 +28,11 @@ For experiments or commands expected to run longer than a few minutes:
 - Track every tmux pane you create. Stop it as soon as it is no longer needed, and clean up obsolete panes before returning control to the user. A pane may remain running only when its underlying process intentionally must outlive the turn.
 - The `tmux-auto-zoom` extension hides any intentionally surviving managed panes by zooming Pi when the agent settles. Do not unzoom or otherwise expose background panes just to inspect them; use `tmux read`.
 - Report completion, failure, or genuine attention needs rather than ordinary progress.
+
+## Harness setup issues
+
+When you hit a quirk or defect in the local harness or machine setup itself (pi extensions, tmux behavior, agent-browser, dotfiles tooling, broken environment wiring), do not fix it in the dotfiles repository. Record it in `~/.dotfiles/TODO.md` instead:
+
+- **Non-blocking issues**: append a dated bullet under a `## <topic> quirks (observed YYYY-MM-DD)` section (create it if missing) describing the symptom, any workaround used, and a suggested fix. Mention it to the user exactly once per issue — a single short note in your reply, never again in later turns.
+- **Blocking issues**: if the problem prevents you from completing the task, stop and bring it to the user's attention immediately. Once resolved (or when told to work around it), record it in `~/.dotfiles/TODO.md` the same way.
+- Only append to `TODO.md`; never "fix" entries, restructure the file, or change unrelated setup files while logging an issue.
