@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Diagnose and attempt software revival of the built-in i8042 keyboard when it
+# wedges (known P14s Gen 6 AMD issue; a suspend/resume cycle normally revives
+# it but closes nothing). Run this first, ideally over SSH from another machine:
+#
+#   sudo ~/.local/bin/dotfiles-keyboard-revive
+#
+# Output is logged to /tmp/kbd-revive-<timestamp>.log for later analysis.
+
+set -u
+
+[ "$(id -u)" -eq 0 ] || exec sudo "$0"
+
+LOG="/tmp/kbd-revive-$(date +%Y%m%d-%H%M%S).log"
+I8042=/sys/devices/platform/i8042
+
+say() { printf '%s\n' "$*" | tee -a "$LOG"; }
+irq1() { awk '$1 == "1:" {print $2}' /proc/interrupts; }
+
+snapshot() {
+	say "--- $(date +%T) IRQ1(i8042 keyboard) count: $(irq1)"
+	for port in "$I8042"/serio0 "$I8042"/serio1; do
+		[ -d "$port" ] && say "$(basename "$port"): $(cat "$port/description" 2>/dev/null)"
+	done
+}
+
+press_keys_window() {
+	say ">>> PRESS BUILT-IN KEYS NOW for 5 seconds (any keys)..."
+	sleep 5
+	say "--- $(date +%T) IRQ1 count after presses: $(irq1)"
+}
+
+rebind_driver() {
+	local port="$1" drv="$2"
+	echo -n "$port" > /sys/bus/serio/drivers/"$drv"/unbind 2>>"$LOG" ||
+		say "unbind of $drv failed"
+	sleep 1
+	echo -n "$port" > /sys/bus/serio/drivers/"$drv"/bind 2>>"$LOG" ||
+		say "bind of $drv failed"
+}
+
+: > "$LOG"
+say "dotfiles-keyboard-revive $(date) kernel=$(uname -r)"
+
+say "Step 1: initial snapshot"
+snapshot
+press_keys_window
+
+say "Step 2: revive attempts"
+say "psmouse full reset on serio1 (drvctl)"
+echo -n reset > "$I8042/serio1/drvctl" 2>>"$LOG" || say "drvctl reset failed"
+say "atkbd rebind on serio0 (no drvctl attribute on atkbd)"
+rebind_driver serio0 atkbd
+say "psmouse rebind on serio1"
+rebind_driver serio1 psmouse
+sleep 3
+press_keys_window
+
+say "Step 3: final snapshot"
+snapshot
+say "Interpretation:"
+say "- IRQ1 unchanged across steps 1 AND 2: key presses never generate an"
+say "  interrupt -> EC/i8042 hardware-level wedge. Only a suspend/resume"
+say "  cycle restores it; the i8042.nomux=1 kernel param and a BIOS/EC"
+say "  firmware update address the underlying cause."
+say "- IRQ1 increased but keys still do nothing: atkbd was wedged and the"
+say "  rebind may have fixed it. Test typing now."
+say "Log: $LOG"
