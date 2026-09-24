@@ -1,0 +1,4 @@
+#!/bin/bash
+# NVIDIA + Sway: force the PTB XWayland path and avoid DMA-BUF mmap flickering.
+# Same recipe as pc/bin/discord; PTB self-updates drop flags the same way.
+exec /usr/bin/discord-ptb --ozone-platform=x11 --disable-gpu-memory-buffer-video-frames "$@"

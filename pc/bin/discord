@@ -1,0 +1,6 @@
+#!/bin/bash
+# NVIDIA + Sway: force the stable XWayland path and avoid DMA-BUF mmap flickering.
+# Matches the recipe from sway-nvidia-debug-log.md (same as cursor / opencode-desktop wrappers).
+# Discord's host updater relaunches the binary with bare argv after version updates,
+# dropping these flags; relaunch via this wrapper (or the .desktop override) afterwards.
+exec /usr/bin/discord --ozone-platform=x11 --disable-gpu-memory-buffer-video-frames "$@"

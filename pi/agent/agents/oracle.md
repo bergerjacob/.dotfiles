@@ -2,8 +2,7 @@
 name: oracle
 aliases: expert, expensive, high, big
 description: Expensive independent second opinion for consequential, high-risk, or genuinely difficult decisions; investigates and advises without editing files.
-model: openai-codex/gpt-5.6-sol
-thinking: high
+thinking: max
 systemPromptMode: append
 inheritProjectContext: true
 inheritSkills: false

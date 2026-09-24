@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.84.3",
+  "lastChangelogVersion": "0.85.1",
   "defaultProvider": "zai",
-  "defaultModel": "glm-5.3-flash",
+  "defaultModel": "glm-5.3",
   "defaultThinkingLevel": "high",
   "theme": "dark",
   "tuiMode": "fullscreen",
@@ -18,6 +18,15 @@
   "subagents": {
     "disableBuiltins": true
   },
+  "retry": {
+    "enabled": true,
+    "maxRetries": 12,
+    "baseDelayMs": 10000,
+    "provider": {
+      "maxRetries": 0,
+      "maxRetryDelayMs": 0
+    }
+  },
   "packages": [
     {
       "source": "npm:pi-subagents",
@@ -29,6 +38,13 @@
     "npm:@ogulcancelik/pi-tmux",
     "npm:pi-btw",
     "npm:@davecodes/pi-dcp",
-    "npm:pi-sandbox"
+    "npm:pi-sandbox",
+    {
+      "source": "git:github.com/cgxeiji/pi-emote",
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
   ]
 }
