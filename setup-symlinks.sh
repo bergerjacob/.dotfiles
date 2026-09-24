@@ -142,6 +142,12 @@ for desktop_file in "$DOTFILES_DIR"/chrome/*.desktop; do
   link_path "$desktop_file" "$HOME/.local/share/applications/$(basename "$desktop_file")"
 done
 
+# Shared executables land in ~/.local/bin for every machine profile.
+# (The shim files detect their own devices/capabilities, so one copy serves
+# laptop and PC.) A profile tree may still override a shared name — it is
+# linked afterwards and wins.
+link_tree "$DOTFILES_DIR/bin" "$HOME/.local/bin"
+
 # Profile trees mirror their destinations, so adding a future machine-specific
 # config or executable does not require changing this script.
 link_tree "$DOTFILES_DIR/$PROFILE/config" "$HOME/.config"

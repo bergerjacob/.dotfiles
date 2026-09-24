@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# bwrap shim — expose GPU devices inside bubblewrap sandboxes.
+#
+# Sandboxes that build their argv with a bare `--dev /dev` (e.g. pi-sandbox)
+# hide /dev/dri, /dev/kfd and /dev/nvidia* from sandboxed commands, which
+# breaks GPU compute (ROCm/HIP/Vulkan on AMD, CUDA on NVIDIA) as well as
+# anything else needing DRI. bwrap itself is resolved via $PATH, so this shim
+# (linked into ~/.local/bin by setup-symlinks.sh) re-injects --dev-bind for
+# whichever GPU device nodes actually exist on this machine.
+#
+# Generic by design: on machines without a given device the bind is skipped,
+# so the same file serves laptop (AMD) and PC (NVIDIA) profiles.
+set -u
+
+extra=()
+for dev in /dev/dri /dev/kfd /dev/nvidiactl /dev/nvidia-uvm /dev/nvidia-uvm-tools /dev/nvidia-modeset /dev/nvidia0 /dev/nvidia1 /dev/nvidia2 /dev/nvidia3 /dev/nvidia4 /dev/nvidia5 /dev/nvidia6 /dev/nvidia7; do
+  if [ -e "$dev" ]; then
+    extra+=(--dev-bind "$dev" "$dev")
+  fi
+done
+
+args=("$@")
+insert_at=${#args[@]}
+for idx in "${!args[@]}"; do
+  # Options must precede bwrap's `--` exec separator; the sandboxed command
+  # itself follows it untouched.
+  if [ "${args[$idx]}" = "--" ]; then
+    insert_at=$idx
+    break
+  fi
+done
+
+exec /usr/bin/bwrap "${args[@]:0:insert_at}" "${extra[@]}" "${args[@]:insert_at}"
