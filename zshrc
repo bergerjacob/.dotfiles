@@ -117,15 +117,19 @@ if [ -f '/home/bergerj/google-cloud-sdk/completion.zsh.inc' ]; then
     . '/home/bergerj/google-cloud-sdk/completion.zsh.inc'
 fi
 
-# ─── pyenv ───
-export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init - zsh)"
-eval "$(pyenv virtualenv-init -)"
+# ─── pyenv (only when installed) ───
+if [ -d "$HOME/.pyenv/bin" ]; then
+    export PYENV_ROOT="$HOME/.pyenv"
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init - zsh)"
+    command -v pyenv-virtualenv >/dev/null 2>&1 && eval "$(pyenv virtualenv-init -)"
+fi
 
-# ─── rbenv ───
-export PATH="$HOME/.rbenv/bin:$PATH"
-eval "$(rbenv init - zsh)"
+# ─── rbenv (only when installed) ───
+if [ -d "$HOME/.rbenv/bin" ]; then
+    export PATH="$HOME/.rbenv/bin:$PATH"
+    eval "$(rbenv init - zsh)"
+fi
 
 # ─── nvm bash completion (via bashcompinit for zsh compatibility) ───
 if [ -s "$NVM_DIR/bash_completion" ]; then
