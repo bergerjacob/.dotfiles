@@ -75,7 +75,6 @@ install_fonts() (
   local font_dir="$HOME/.local/share/fonts/HackNerdFont"
   local url="https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/Hack.tar.xz"
   local archive
-  trap 'rm -f "$archive"' EXIT
 
   if [ "$(fc-match -f '%{family}' "$family")" = "$family" ]; then
     printf '[fonts] %s is already installed\n' "$family"
@@ -83,6 +82,7 @@ install_fonts() (
   fi
 
   archive="$(mktemp --suffix=.tar.xz)"
+  trap 'rm -f "$archive"' EXIT
 
   printf '[fonts] downloading Hack Nerd Font %s\n' "$version"
   curl --fail --location --retry 3 --output "$archive" "$url"
