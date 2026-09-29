@@ -40,3 +40,16 @@
   `alacritty.toml` chars binding. → Worth an upstream issue: `parseKey("\x1bG")` should map
   to `alt+shift+g`, and `matchesKittySequence` should treat an uppercase-letter codepoint
   with no shift bit (tmux's textual encoding) as shift+letter.
+
+## pi container quirks (observed 2026-09-29)
+
+- Running pi inside the project container bind-mounts the repo and masks several
+  repo-root paths (`.bashrc`, `.zshrc`, `.zprofile`, `.ripgreprc`, `.env`,
+  `.gitconfig`, `.mcp.json`, `.profile`, `.bash_profile`) with devtmpfs `/dev/null`
+  mounts. They show up as untracked files in `git status`, cannot be deleted
+  ("Device or resource busy"), and `sudo` is blocked ("no new privileges"), so
+  host-level actions like `chsh` cannot be run from inside the session.
+  Workaround used: listed the masked paths in `.git/info/exclude` (machine-local)
+  and asked the user to run host commands themselves.
+  → Fix: have the container harness mask those paths outside the worktree, or
+  expose a `.git/info/exclude` snippet for container sessions automatically.

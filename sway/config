@@ -3,7 +3,7 @@ set $mod Mod4
 # -------------------------------------------------------------------
 # -- Machine Configuration
 # -------------------------------------------------------------------
-# setup-symlinks.sh selects this file from laptop/ or pc/. It defines output
+# setup.sh selects this file from laptop/ or pc/. It defines output
 # names, display modes, input settings, and any hardware-specific bindings.
 include ~/.config/sway/machine.conf
 

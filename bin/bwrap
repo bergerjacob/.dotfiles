@@ -5,7 +5,7 @@
 # hide /dev/dri, /dev/kfd and /dev/nvidia* from sandboxed commands, which
 # breaks GPU compute (ROCm/HIP/Vulkan on AMD, CUDA on NVIDIA) as well as
 # anything else needing DRI. bwrap itself is resolved via $PATH, so this shim
-# (linked into ~/.local/bin by setup-symlinks.sh) re-injects --dev-bind for
+# (linked into ~/.local/bin by setup.sh) re-injects --dev-bind for
 # whichever GPU device nodes actually exist on this machine.
 #
 # Generic by design: on machines without a given device the bind is skipped,

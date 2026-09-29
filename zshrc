@@ -156,8 +156,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 export PATH="/home/bergerj/.local/bin:$PATH"
 
 
-source /home/bergerj/main/personal/local-ai/terminal-ai-thing-name-tbd/zsh-widget.zsh
-
 # ─── Word movement ───
 # Match Ctrl+Left / Ctrl+Right from modern terminals and tmux.
 bindkey -M emacs '^[[1;5D' backward-word

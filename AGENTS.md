@@ -64,12 +64,12 @@ For link-only updates or inspection:
 
 ```bash
 ./setup.sh laptop --link-only
-./setup-symlinks.sh pc --dry-run
+./setup.sh pc --dry-run
 ```
 
-`setup.sh` installs only missing packages, deploys shared and profile system trees, runs declared hooks, enables services, installs the pinned font, and then calls `setup-symlinks.sh`.
+`setup.sh` installs only missing packages, deploys shared and profile system trees, runs declared hooks, enables services, installs the pinned font, and then links the shared and profile configuration. `--link-only` skips the privileged steps; `--dry-run` implies `--link-only` and prints the link commands without running them.
 
-`setup-symlinks.sh` must remain idempotent. It should:
+The link step must remain idempotent. It should:
 
 - Replace stale links from the other profile.
 - Remove dangling links into old repository paths.
@@ -133,7 +133,7 @@ Avoid unconditional upgrades during setup. Package installation should continue 
 At minimum, run these checks after relevant changes:
 
 ```bash
-bash -n setup.sh setup-symlinks.sh install-fonts.sh laptop/bin/* pc/bin/* sway/*.sh
+bash -n setup.sh laptop/bin/* pc/bin/* sway/*.sh
 zsh -n zshrc
 jq empty opencode/oh-my-opencode-slim.json opencode/opencode.json pi/agent/settings.json pi/agent/keybindings.json pi/agent/models.json pi/agent/pi-dcp.json
 git diff --check
