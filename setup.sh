@@ -348,6 +348,13 @@ if [ "$LINK_ONLY" = false ]; then
     fi
   fi
 
+  # zsh is the interactive shell on every profile; make it the login shell
+  # once the package is known to be installed.
+  if [ "$(getent passwd "$(id -un)" | cut -d: -f7)" != "$(command -v zsh)" ]; then
+    printf '[setup] setting login shell to zsh\n'
+    sudo usermod -s "$(command -v zsh)" "$(id -un)"
+  fi
+
   sync_system_tree "$DOTFILES_DIR/system"
   sync_system_tree "$DOTFILES_DIR/$PROFILE/system"
 

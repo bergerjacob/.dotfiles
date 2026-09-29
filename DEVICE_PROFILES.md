@@ -36,9 +36,9 @@ update links without packages, downloads, or privileged changes:
 ./setup.sh laptop --dry-run
 ```
 
-Both desktop profiles use zsh as the interactive shell. The setup does not
-change login shells, so run `chsh -s /usr/bin/zsh` once per machine if the
-account still defaults to bash.
+Both desktop profiles use zsh as the interactive shell, and the full setup
+also sets it as the account's login shell. `--link-only` skips that step along
+with the other privileged changes.
 
 For a headless Debian/Ubuntu server where the user cannot use `sudo`, use the
 separate minimal-dev mode:
