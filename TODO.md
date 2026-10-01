@@ -48,5 +48,18 @@
 ## pi tool sandbox networking quirks (observed 2026-09-28)
 - pi's bash tool runs under bwrap with `--unshare-net`, so sandboxed shells cannot reach host loopback services (connection refused; `ss -tln` empty). A python http.server started in a tmux pane (host side) works for the user but is invisible to sandboxed curl/chrome. Workaround: run servers, browsers, and API calls needing host network in tmux panes; exchange results via files in the shared repo dir (guaranteed bidirectionally visible) rather than /tmp, and don't stack multiple queued commands in one busy pane (typed input buffers until the foreground job exits and can look swallowed). Suggested fix: document a "host execution via tmux" recipe for pi agents, or give the bash sandbox loopback passthrough.
 
+## pi container quirks (observed 2026-09-29)
+
+- Running pi inside the project container bind-mounts the repo and masks several
+  repo-root paths (`.bashrc`, `.zshrc`, `.zprofile`, `.ripgreprc`, `.env`,
+  `.gitconfig`, `.mcp.json`, `.profile`, `.bash_profile`) with devtmpfs `/dev/null`
+  mounts. They show up as untracked files in `git status`, cannot be deleted
+  ("Device or resource busy"), and `sudo` is blocked ("no new privileges"), so
+  host-level actions like `chsh` cannot be run from inside the session.
+  Workaround used: listed the masked paths in `.git/info/exclude` (machine-local)
+  and asked the user to run host commands themselves.
+  → Fix: have the container harness mask those paths outside the worktree, or
+  expose a `.git/info/exclude` snippet for container sessions automatically.
+
 ## pi sandbox dotfile masks (observed 2026-10-01)
 - Root cause confirmed for the 2026-09-20 nine-dotfiles quirk: pi's bwrap bash sandbox creates 0-byte read-only placeholder files (.bashrc, .env, .gitconfig, .mcp.json, .zshrc, etc.) in the session cwd on the real filesystem, then bind-mounts /dev/null (devtmpfs, inode 1:3 nobody:nogroup) over them inside the sandbox namespace. From inside the sandbox they cannot be removed (EBUSY, held by bwrap/socat) and git status there shows them untracked; outside pi they linger as untracked noise until deleted. Workaround: remove via `tmux run-shell -b 'rm -f ...'` (runs unsandboxed on the tmux server) and gitignore the names in any repo used as a pi cwd (done in ~/Scripts/.gitignore). Suggested fix: sandbox should mask via a private tmpfs/overlay layer instead of creating placeholders in the real cwd, or delete placeholders when the session ends.

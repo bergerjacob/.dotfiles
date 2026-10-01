@@ -26,15 +26,19 @@ full profile when setting up a desktop machine:
 
 `setup.sh` installs the package manifests, copies the shared and selected
 profile's `system/` trees into `/`, enables their service manifests, and then
-runs the linker. It also installs the pinned Hack Nerd Font into the user's
-local font directory when needed. To update links without packages, downloads,
-or privileged changes:
+links the shared and selected profile configuration. It also installs the
+pinned Hack Nerd Font into the user's local font directory when needed. To
+update links without packages, downloads, or privileged changes:
 
 ```bash
 ./setup.sh laptop --link-only
 # or inspect first
-./setup-symlinks.sh laptop --dry-run
+./setup.sh laptop --dry-run
 ```
+
+Both desktop profiles use zsh as the interactive shell, and the full setup
+also sets it as the account's login shell. `--link-only` skips that step along
+with the other privileged changes.
 
 For a headless Debian/Ubuntu server where the user cannot use `sudo`, use the
 separate minimal-dev mode:
@@ -59,7 +63,7 @@ server.
 
 Profile `config/` and `bin/` directories mirror `~/.config` and `~/.local/bin`.
 Files placed there are linked automatically. Shared files use the explicit list
-in `setup-symlinks.sh`, which keeps their public locations easy to audit.
+in `setup.sh`, which keeps their public locations easy to audit.
 
 Pi's shared declarative configuration lives below `pi/agent/`. The linker links
 its settings, keybindings, agents, and user-authored resource directories
@@ -85,8 +89,7 @@ so it works natively on Wayland and does not need an XKB startup script.
 
 1. Add a sibling of `laptop/` and `pc/` with any needed `config/`, `bin/`, and
    `system/` files.
-2. Add its name to the accepted profile case in `setup.sh` and
-   `setup-symlinks.sh`.
+2. Add its name to the accepted profile case in `setup.sh`.
 3. Add optional `packages`, `services`, `restart-services`, `root-setup`, and
    `user-services` manifests.
 
