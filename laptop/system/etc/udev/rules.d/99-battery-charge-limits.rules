@@ -1,0 +1,7 @@
+# Cap battery charging at 75-80% to extend pack life. upower's hwdb advertises
+# CHARGE_LIMIT=75,80 for this battery but nothing on Debian applies it, so the
+# EC otherwise charges to 100%. Applied on battery add/change events; harmless
+# to rewrite, and survives replug/reboot once installed.
+ACTION=="add|change", SUBSYSTEM=="power_supply", KERNEL=="BAT0", \
+  ATTR{charge_control_start_threshold}="75", \
+  ATTR{charge_control_end_threshold}="80"
