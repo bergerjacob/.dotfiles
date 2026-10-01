@@ -20,22 +20,35 @@
 //       fast      <model>              <thinking>
 //       standard  <model>              <thinking>
 //       oracle    <model>              <thinking>
+//       vision    <model> or none      <thinking>
 //
 //     ↑/↓ moves between rows, ←/→ between the model/thinking cells, enter
 //     edits the focused cell (model cells use pi's built-in model picker),
+//     x on an agent-row model cell disables that agent for the mode and
+//         toggles back (saved as null; enter afterwards re-picks a model),
 //     esc closes without saving. "save & continue" writes the mapping and
 //     applies it.
 //
 //     Saved to ~/.pi/agent/modes-custom.json (machine-local, unmanaged) and
 //     re-read fresh on every use, so it can also be edited by hand:
 //       { "primary": { "model": "provider/id", "thinking": "high" },
-//         "agents": { "fast": {...}, "standard": {...}, "oracle": {...} } }
+//         "agents": { "fast": {...}, "standard": {...}, "oracle": {...},
+//                    "vision": {...} | null } }
 //
 // How it works:
 // - Primary: pi.setModel() + pi.setThinkingLevel() — instant, this session.
 // - Subagents: every `subagent` tool call gets the mode's model/thinking injected
 //   as a per-run override, which outranks agent frontmatter. Explicit model in a
 //   tool call always wins. No config files are modified, so git stays clean.
+// - Agent slots set to none (x in the editor, null in the mapping) are disabled
+//   for that mode: launches are blocked with a clear reason and the slot is
+//   omitted from the parent's mode note. Keys absent from a hand-edited mapping
+//   stay merely unpinned (agent frontmatter defaults apply), so agents the mode
+//   does not know about (e.g. package agents) are never blocked.
+// - A non-null `vision` slot adds one line to the parent's mode note: the parent
+//   cannot see images and must hand image paths plus a specific question to the
+//   vision agent. A null vision slot adds nothing, so vision-capable primaries
+//   get no image instructions at all.
 // - Persistence lives in ~/.pi/agent/modes-state.json (machine-local, unmanaged).
 // - Known gap: children spawned inside workflowScript runs.run() calls bypass the
 //   tool-call hook. While a mode is active a short system-prompt note tells the
@@ -61,7 +74,8 @@ interface Pick {
 interface Mode {
   description: string;
   primary: Pick;
-  agents: Record<string, Pick>;
+  // null = agent disabled for this mode; missing = unpinned (frontmatter defaults).
+  agents: Record<string, Pick | null>;
 }
 
 const STATE_FILE = join(homedir(), ".pi", "agent", "modes-state.json");
@@ -75,15 +89,17 @@ const MODES: Record<string, Mode> = {
       fast: { model: "openai-codex/gpt-5.6-luna", thinking: "low" },
       standard: { model: "openai-codex/gpt-5.6-terra", thinking: "medium" },
       oracle: { model: "openai-codex/gpt-5.6-sol", thinking: "high" },
+      vision: null, // gpt-5.6 sees images natively; no vision sidecar wanted
     },
   },
   glm: {
     description: "All Z.ai GLM (5.3 / 5.3-flash)",
-    primary: { model: "zai/glm-5.3-flash", thinking: "high" },
+    primary: { model: "zai/glm-5.3", thinking: "high" },
     agents: {
       fast: { model: "zai/glm-5.3-flash", thinking: "low" },
       standard: { model: "zai/glm-5.3", thinking: "high" },
       oracle: { model: "zai/glm-5.3", thinking: "max" },
+      vision: { model: "zai/glm-5.3-flash", thinking: "low" },
     },
   },
 };
@@ -95,6 +111,7 @@ const AGENT_SLOTS: Array<{ key: string; label: string }> = [
   { key: "fast", label: "fast" },
   { key: "standard", label: "standard" },
   { key: "oracle", label: "oracle" },
+  { key: "vision", label: "vision" },
 ];
 
 const THINKING_CHOICES = ["default", "off", "minimal", "low", "medium", "high", "xhigh", "max"];
@@ -113,6 +130,9 @@ const AGENT_ALIASES: Record<string, string> = {
   expensive: "oracle",
   high: "oracle",
   big: "oracle",
+  vision: "vision",
+  eyes: "vision",
+  look: "vision",
   main: "main",
 };
 
@@ -141,7 +161,7 @@ async function getMode(name: string): Promise<Mode | undefined> {
       !isValidPick(parsed.primary) ||
       typeof parsed.agents !== "object" ||
       parsed.agents === null ||
-      !Object.values(parsed.agents).every(isValidPick)
+      !Object.values(parsed.agents).every((pick) => pick === null || isValidPick(pick))
     ) {
       return undefined;
     }
@@ -151,7 +171,7 @@ async function getMode(name: string): Promise<Mode | undefined> {
   }
 }
 
-function pickFor(mode: Mode, agentName: string | undefined): Pick | undefined {
+function pickFor(mode: Mode, agentName: string | undefined): Pick | null | undefined {
   const raw = (agentName ?? "main").toLowerCase();
   const canonical = AGENT_ALIASES[raw] ?? raw;
   if (canonical === "main") return mode.primary;
@@ -164,6 +184,7 @@ function formatPick(pick: Pick): string {
 
 function modeSummary(name: string, mode: Mode): string {
   const agents = Object.entries(mode.agents)
+    .filter((entry): entry is [string, Pick] => entry[1] !== null)
     .map(([agent, pick]) => `${agent}→${formatPick(pick)}`)
     .join("  ");
   return `mode: ${name} · primary ${formatPick(mode.primary)} · ${agents}`;
@@ -318,6 +339,7 @@ interface EditorRow {
   key: string;
   model: string; // "provider/id" or "" when unset
   thinking?: string;
+  none?: boolean; // explicitly disabled for the mode (saved as null)
 }
 
 interface EditorDeps {
@@ -435,6 +457,17 @@ export class CustomModeEditor extends Container {
       else this.startEdit();
     } else if (kb.matches(data, "tui.select.cancel")) {
       this.deps.done(undefined);
+    } else if ((data === "x" || data === "X") && this.cursor > 0 && this.col === 0) {
+      // Toggle the focused agent row between disabled (null) and unset.
+      const row = this.deps.rows[this.cursor - 1]!;
+      if (row.key === "main") {
+        this.flash = "main cannot be disabled";
+      } else {
+        row.none = !row.none;
+        if (row.none) row.model = "";
+        this.flash = row.none ? `${row.key} disabled — enter to pick a model again` : "";
+      }
+      this.rebuild();
     }
   }
 
@@ -444,21 +477,28 @@ export class CustomModeEditor extends Container {
   }
 
   private save(): void {
-    const empty = this.deps.rows.find((row) => !row.model);
-    if (empty) {
-      this.flash = `pick a model for ${empty.key} first`;
+    const main = this.deps.rows[0]!;
+    if (!main.model) {
+      this.flash = "pick a model for main first";
       this.rebuild();
       return;
     }
-    const pickOf = (row: EditorRow): Pick => {
+    const empty = this.deps.rows.find((row) => row.key !== "main" && !row.none && !row.model);
+    if (empty) {
+      this.flash = `pick a model for ${empty.key} or press x to disable it`;
+      this.rebuild();
+      return;
+    }
+    const pickOf = (row: EditorRow): Pick | null => {
+      if (row.none) return null;
       const pick: Pick = { model: row.model };
       if (row.thinking) pick.thinking = row.thinking;
       return pick;
     };
-    const [main, ...rest] = this.deps.rows;
+    const [mainRow, ...rest] = this.deps.rows;
     const mode: Mode = {
       description: `custom picks · saved ${new Date().toISOString().slice(0, 10)}`,
-      primary: pickOf(main!),
+      primary: pickOf(mainRow!) as Pick,
       agents: Object.fromEntries(rest.map((row) => [row.key, pickOf(row)])),
     };
     this.deps.done({ saved: true, mode });
@@ -470,7 +510,10 @@ export class CustomModeEditor extends Container {
     if (this.col === 0) {
       this.editingLabel = `model for ${row.key}`;
       const finish = (id?: string): void => {
-        if (id) row.model = id;
+        if (id) {
+          row.model = id;
+          row.none = false;
+        }
         this.backToTable();
       };
       if (this.deps.coreSelector) {
@@ -571,7 +614,7 @@ export class CustomModeEditor extends Container {
     }
     return (
       this.deps.theme.fg("accent", "custom mode") +
-      this.deps.theme.fg("muted", " — enter edit · ↑↓ row · ←→ cell · esc close")
+      this.deps.theme.fg("muted", " — enter edit · ↑↓ row · ←→ cell · x disable · esc close")
     );
   }
 
@@ -604,7 +647,7 @@ export class CustomModeEditor extends Container {
       const prefix = selected ? theme.fg("accent", "→ ") : "  ";
       const agent = (row.key || "").padEnd(agentPad);
       const agentText = theme.fg(selected ? "accent" : "muted", agent);
-      const modelDisplay = (row.model || placeholder).padEnd(modelPad);
+      const modelDisplay = (row.none ? "none" : row.model || placeholder).padEnd(modelPad);
       const modelText = selected
         ? this.col === 0
           ? theme.fg("accent", modelDisplay)
@@ -644,7 +687,13 @@ async function openCustomModeEditor(
 
   const rows: EditorRow[] = AGENT_SLOTS.map((slot) => {
     const pick = slot.key === "main" ? previous?.primary : previous?.agents[slot.key];
-    return { key: slot.key, model: pick?.model ?? "", thinking: pick?.thinking };
+    // An absent or null agent slot loads as disabled; main always needs a model.
+    return {
+      key: slot.key,
+      model: pick?.model ?? "",
+      thinking: pick?.thinking,
+      ...(slot.key !== "main" && pick == null ? { none: true } : {}),
+    };
   });
 
   const result = await ctx.ui.custom<{ saved: boolean; mode: Mode } | undefined>(
@@ -699,6 +748,22 @@ export default function (pi: ExtensionAPI) {
     // Orchestration scripts, resumes, and management actions are left alone.
     if (input.action || input.workflowScript || input.resume) return;
 
+    // Slots explicitly disabled in this mode (null) are blocked at launch so a
+    // mode can retire an agent without deleting its definition.
+    let blocked: string | undefined;
+    const check = (item: unknown): void => {
+      if (blocked !== undefined || !item || typeof item !== "object") return;
+      const record = item as Record<string, unknown>;
+      if (typeof record.agent !== "string") return;
+      const canonical = AGENT_ALIASES[record.agent.toLowerCase()] ?? record.agent.toLowerCase();
+      if (canonical !== "main" && mode.agents[canonical] === null) blocked = canonical;
+    };
+    check(input);
+    if (Array.isArray(input.tasks)) input.tasks.forEach(check);
+    if (blocked !== undefined) {
+      return { block: true, reason: `agent "${blocked}" is disabled in mode "${activeMode}"` };
+    }
+
     const inject = (item: unknown): boolean => {
       if (!item || typeof item !== "object") return false;
       const record = item as Record<string, unknown>;
@@ -722,12 +787,18 @@ export default function (pi: ExtensionAPI) {
     const mode = activeMode ? await getMode(activeMode) : undefined;
     if (!mode || process.env.PI_SUBAGENT_CHILD === "1") return;
     const agents = Object.entries(mode.agents)
+      .filter((entry): entry is [string, Pick] => entry[1] !== null)
       .map(([agent, pick]) => `${agent}=${formatPick(pick)}`)
       .join(", ");
+    // Only modes that configure a vision sidecar teach the parent image rules;
+    // without one the parent gets no image instructions at all.
+    const visionNote = mode.agents.vision
+      ? " A vision agent is enabled: you cannot see images, and reading image files returns no visual content to you. Pass exact image paths plus a specific question to the vision agent instead — single images or batches."
+      : "";
     return {
       systemPrompt: `${event.systemPrompt}\n\nActive model mode: ${activeMode} (primary ${formatPick(
         mode.primary,
-      )}). When spawning subagents inside workflowScript runs.run() calls, pass these explicit per-child model overrides: ${agents}.`,
+      )}). When spawning subagents inside workflowScript runs.run() calls, pass these explicit per-child model overrides: ${agents}.${visionNote}`,
     };
   });
 
