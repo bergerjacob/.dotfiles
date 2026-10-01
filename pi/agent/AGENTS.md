@@ -11,6 +11,9 @@ Choose the lowest suitable subagent tier:
 - `fast`: well-bounded exploration, research, mechanical edits, repetitive implementation, and validation.
 - `standard`: substantial analysis, design or visual judgment, coherent multi-file work, and moderately ambiguous tasks.
 - `oracle`: narrow independent second opinions on consequential, high-risk, or genuinely difficult decisions. Prefer concise questions and do not use it for routine work.
+- `vision`: image and screenshot inspection through a vision-capable model; exists only when the active mode configures one.
+
+When the active mode provides a `vision` agent, the primary model cannot see images: reading an image file returns no visual content. Hand exact image paths plus a specific question to `vision` — single images, or batches with per-image and comparison instructions — instead of reading them yourself.
 
 Avoid parallel writers to the same files. Use subagents to isolate useful work and context, not merely to add another layer of prompting.
 
@@ -31,7 +34,7 @@ For experiments or commands expected to run longer than a few minutes:
 
 ## Git discipline
 
-- Never push to GitHub or any other remote unless explicitly told to. Creating local commits is fine when it fits the task; pushing is always a separate, explicit instruction.
+- Never push to GitHub or any other remote unless explicitly told to; pushing is always a separate, explicit instruction. Create local commits only when explicitly asked or when moving on to sufficiently different work — not after every task or edit; commit far less often than feels natural.
 - Before committing in an unfamiliar repository, check `git log` and match the naming pattern of recent commits in that repo.
 - Keep commit titles short: a few lowercase words forming a short sentence describing the change, as concise as possible. No conventional-commit prefixes such as `feat:`, `fix:`, or similar tags.
 

@@ -15,6 +15,7 @@
   pane silently sits at a zsh prompt; `tmux read` then shows the shell, not an obvious
   "process exited" signal. A pane-status/exit-code line in `read` output would help debugging.
 - `tmux read` output includes the typed command echo twice (once as sent, once from zsh echo),
+- Agents open random tmux things some times like panes are normal then sometimes a new session or a new tab can this be made more consistent so it only has access to the right set of things
   which makes parsing logs by eye slightly confusing.
 
 ## agent-browser quirks (observed 2026-09-14)
@@ -41,6 +42,12 @@
   to `alt+shift+g`, and `matchesKittySequence` should treat an uppercase-letter codepoint
   with no shift bit (tmux's textual encoding) as shift+letter.
 
+## repo/environment quirks (observed 2026-09-20)
+- Nine dotfiles (.bashrc, .bash_profile, .env, .gitconfig, .profile, .zprofile, .zshrc, .mcp.json, .ripgreprc) appear in the precondeeptioner repo root as 0-byte character devices (1:3 = /dev/null, nobody:nogroup) — created by some sandboxed/containerized process resolving $HOME-relative redirects into the repo cwd. Workaround: delete them + add root-dotfile entries to the repo .gitignore. Suggested fix: find which sandbox layer leaks $HOME redirects (pi tool sandbox or tmux cwd handling) and pin its cwd/HOME.
+
+## pi tool sandbox networking quirks (observed 2026-09-28)
+- pi's bash tool runs under bwrap with `--unshare-net`, so sandboxed shells cannot reach host loopback services (connection refused; `ss -tln` empty). A python http.server started in a tmux pane (host side) works for the user but is invisible to sandboxed curl/chrome. Workaround: run servers, browsers, and API calls needing host network in tmux panes; exchange results via files in the shared repo dir (guaranteed bidirectionally visible) rather than /tmp, and don't stack multiple queued commands in one busy pane (typed input buffers until the foreground job exits and can look swallowed). Suggested fix: document a "host execution via tmux" recipe for pi agents, or give the bash sandbox loopback passthrough.
+
 ## pi container quirks (observed 2026-09-29)
 
 - Running pi inside the project container bind-mounts the repo and masks several
@@ -53,3 +60,6 @@
   and asked the user to run host commands themselves.
   → Fix: have the container harness mask those paths outside the worktree, or
   expose a `.git/info/exclude` snippet for container sessions automatically.
+
+## pi sandbox dotfile masks (observed 2026-10-01)
+- Root cause confirmed for the 2026-09-20 nine-dotfiles quirk: pi's bwrap bash sandbox creates 0-byte read-only placeholder files (.bashrc, .env, .gitconfig, .mcp.json, .zshrc, etc.) in the session cwd on the real filesystem, then bind-mounts /dev/null (devtmpfs, inode 1:3 nobody:nogroup) over them inside the sandbox namespace. From inside the sandbox they cannot be removed (EBUSY, held by bwrap/socat) and git status there shows them untracked; outside pi they linger as untracked noise until deleted. Workaround: remove via `tmux run-shell -b 'rm -f ...'` (runs unsandboxed on the tmux server) and gitignore the names in any repo used as a pi cwd (done in ~/Scripts/.gitignore). Suggested fix: sandbox should mask via a private tmpfs/overlay layer instead of creating placeholders in the real cwd, or delete placeholders when the session ends.
