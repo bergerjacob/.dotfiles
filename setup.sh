@@ -207,7 +207,7 @@ setup_links() {
   # while sharing only the declarative configuration and user-authored
   # resources.
   local pi_entry
-  for pi_entry in AGENTS.md agents extensions keybindings.json models.json prompts sandbox.json settings.json skills themes; do
+  for pi_entry in AGENTS.md agents extensions keybindings.json models.json prompts sandbox.json secret-mask.json settings.json skills themes; do
     link_path "$DOTFILES_DIR/pi/agent/$pi_entry" "$HOME/.pi/agent/$pi_entry"
   done
   # DCP runtime state and statistics remain machine-local.
@@ -303,7 +303,7 @@ setup_minimal() {
   printf '[setup-minimal-dev] no packages, sudo, system files, services, fonts, or general symlinks\n'
   minimal_copy_tree "$DOTFILES_DIR/opencode" "$HOME/.config/opencode"
 
-  for pi_entry in AGENTS.md agents extensions keybindings.json models.json prompts sandbox.json settings.json skills themes; do
+  for pi_entry in AGENTS.md agents extensions keybindings.json models.json prompts sandbox.json secret-mask.json settings.json skills themes; do
     if [ -d "$DOTFILES_DIR/pi/agent/$pi_entry" ]; then
       minimal_copy_tree "$DOTFILES_DIR/pi/agent/$pi_entry" "$HOME/.pi/agent/$pi_entry"
     elif [ -f "$DOTFILES_DIR/pi/agent/$pi_entry" ]; then

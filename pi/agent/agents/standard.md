@@ -2,6 +2,7 @@
 name: standard
 aliases: medium
 description: General capable agent for substantial analysis, design and visual judgment, multi-file implementation, focused review, and moderately ambiguous work.
+model: zai/glm-5.3
 thinking: high
 systemPromptMode: append
 inheritProjectContext: true

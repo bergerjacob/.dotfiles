@@ -2,9 +2,11 @@
 //
 // Usage:
 //   /mode              interactive picker (shows current mode and mapping)
-//   /mode <name>       switch primary + subagents for this pi instance only
-//   /mode <name> keep  switch and persist; every new pi instance starts this way
-//   /mode off          clear the overlay AND persisted mode (back to config defaults)
+//   /mode <name>       switch primary + subagents; becomes the startup mode
+//   /mode off          reset to the default mode (a mode is always active)
+//
+//   ("keep" is still accepted as a suffix but is a no-op: every switch
+//    persists, because the last-used mode is always the startup mode)
 //
 // Custom mode (manually picked mapping):
 //   /mode custom [keep]         opens the table editor (below). Selecting
@@ -49,7 +51,13 @@
 //   cannot see images and must hand image paths plus a specific question to the
 //   vision agent. A null vision slot adds nothing, so vision-capable primaries
 //   get no image instructions at all.
-// - Persistence lives in ~/.pi/agent/modes-state.json (machine-local, unmanaged).
+// - A mode is always active. The active mode is persisted to
+//   ~/.pi/agent/modes-state.json (machine-local, unmanaged) and restored at
+//   startup. With no saved state the preset whose primary matches the
+//   session's (config-default) model is activated — first preset as
+//   fallback — and /mode off resets to that default. Switching without
+//   credentials falls back through the other presets so a mode stays
+//   active whenever any model is usable.
 // - Known gap: children spawned inside workflowScript runs.run() calls bypass the
 //   tool-call hook. While a mode is active a short system-prompt note tells the
 //   parent to pass explicit per-child models, which covers that path in practice.
@@ -62,9 +70,9 @@ import type { Model } from "@earendil-works/pi-ai";
 import type { AutocompleteItem } from "@earendil-works/pi-tui";
 import { Container, getKeybindings, Spacer, Text } from "@earendil-works/pi-tui";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { readFile, rm, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 
 interface Pick {
   model: string;
@@ -78,8 +86,11 @@ interface Mode {
   agents: Record<string, Pick | null>;
 }
 
-const STATE_FILE = join(homedir(), ".pi", "agent", "modes-state.json");
-const CUSTOM_FILE = join(homedir(), ".pi", "agent", "modes-custom.json");
+const AGENT_DIR = process.env.PI_CODING_AGENT_DIR
+  ? resolve(process.env.PI_CODING_AGENT_DIR)
+  : join(homedir(), ".pi", "agent");
+const STATE_FILE = join(AGENT_DIR, "modes-state.json");
+const CUSTOM_FILE = join(AGENT_DIR, "modes-custom.json");
 
 const MODES: Record<string, Mode> = {
   openai: {
@@ -243,12 +254,36 @@ async function applyMode(
   return true;
 }
 
-async function clearMode(ctx: ExtensionContext, notifyResult: boolean): Promise<void> {
-  activeMode = null;
-  await updateStatus(ctx);
-  if (notifyResult && ctx.hasUI) {
-    ctx.ui.notify("mode: off — using config defaults", "info");
+/** The configured default model (settings.json), e.g. "zai/glm-5.3". */
+async function configDefaultModelRef(): Promise<string | undefined> {
+  try {
+    const raw = JSON.parse(await readFile(join(AGENT_DIR, "settings.json"), "utf8")) as {
+      defaultProvider?: unknown;
+      defaultModel?: unknown;
+    };
+    if (typeof raw.defaultProvider === "string" && typeof raw.defaultModel === "string") {
+      return `${raw.defaultProvider}/${raw.defaultModel}`;
+    }
+  } catch {
+    // Unreadable/missing settings — fall back to the first preset.
   }
+  return undefined;
+}
+
+/** The mode to use when no persisted state exists: the preset whose primary
+ *  matches the configured default model, else the first preset. */
+async function defaultModeName(): Promise<string> {
+  const ref = await configDefaultModelRef();
+  if (ref) {
+    for (const [name, mode] of Object.entries(MODES)) {
+      if (mode.primary.model === ref) return name;
+    }
+  }
+  return Object.keys(MODES)[0]!;
+}
+
+async function persistMode(name: string): Promise<void> {
+  await writeFile(STATE_FILE, `${JSON.stringify({ mode: name }, null, 2)}\n`, "utf8");
 }
 
 function resolveModeName(input: string): string | undefined {
@@ -721,19 +756,36 @@ async function openCustomModeEditor(
 // ---------------------------------------------------------------------------
 
 export default function (pi: ExtensionAPI) {
-  // Restore a persisted mode at startup so `keep` survives new pi instances.
-  // Subagent children skip this: they already get model/thinking via the
-  // parent's per-run override, and re-applying the primary pick here would
-  // clobber e.g. a `fast` child's low thinking with the primary's level.
+  // A mode is always active: restore the last-used (persisted) mode at
+  // startup, or the default preset when no state exists yet. Subagent
+  // children skip this: they already get model/thinking via the parent's
+  // per-run override, and re-applying the primary pick here would clobber
+  // e.g. a `fast` child's low thinking with the primary's level.
   pi.on("session_start", async (_event, ctx) => {
     if (process.env.PI_SUBAGENT_CHILD === "1") return;
+    let name: string | undefined;
     try {
       const state = JSON.parse(await readFile(STATE_FILE, "utf8")) as { mode?: string };
-      if (state && typeof state.mode === "string") {
-        await applyMode(pi, ctx, state.mode, false);
-      }
+      if (state && typeof state.mode === "string") name = state.mode;
     } catch {
-      // No state file (or unreadable) — config defaults apply.
+      // No state file yet — fall through to the default mode.
+    }
+    if (!name || (name !== CUSTOM_MODE_NAME && !MODES[name])) {
+      name = await defaultModeName();
+    }
+    // Keep a mode active even when the preferred one cannot apply (e.g.
+    // missing credentials): try the preferred mode, then the other presets,
+    // then custom.
+    const chain = [name, ...Object.keys(MODES).filter((k) => k !== name)];
+    if (!chain.includes(CUSTOM_MODE_NAME)) chain.push(CUSTOM_MODE_NAME);
+    for (const candidate of chain) {
+      if (await applyMode(pi, ctx, candidate, false)) {
+        await persistMode(candidate);
+        return;
+      }
+    }
+    if (ctx.hasUI) {
+      ctx.ui.notify("mode: no mode could be applied — running on config defaults", "error");
     }
   });
 
@@ -804,7 +856,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("mode", {
     description:
-      "Model preset for primary + subagents: /mode <openai|glm|custom> [keep], /mode off, or /mode for a picker (custom opens the table editor)",
+      "Model preset for primary + subagents: /mode <openai|glm|custom>, /mode off (reset to default), or /mode for a picker (custom opens the table editor)",
     getArgumentCompletions: (prefix: string): AutocompleteItem[] | null => {
       const items: AutocompleteItem[] = [
         ...Object.entries(MODES).map(([name, mode]) => ({
@@ -819,8 +871,7 @@ export default function (pi: ExtensionAPI) {
           value: "custom edit",
           label: "custom edit — same as /mode custom",
         },
-        { value: "off", label: "off — back to config defaults (clears kept mode)" },
-        { value: "keep", label: "keep — suffix to persist across pi instances" },
+        { value: "off", label: "off — reset to the default mode (a mode is always active)" },
       ];
       const filtered = items.filter((item) => item.value.startsWith(prefix));
       return filtered.length > 0 ? filtered : null;
@@ -831,28 +882,24 @@ export default function (pi: ExtensionAPI) {
         .split(/\s+/)
         .filter(Boolean)
         .map((part) => part.toLowerCase());
-      const keep = parts.includes("keep");
       const namePart = parts.find((part) => part !== "keep" && part !== "edit");
 
       // No argument: show picker in TUI, otherwise just report status.
       if (!namePart) {
         if (ctx.hasUI && ctx.mode === "tui") {
-          const current = activeMode ? `${activeMode} (active)` : "off (config defaults)";
-          const choices = Object.keys(MODES).concat(CUSTOM_MODE_NAME, "off");
+          const current = activeMode ?? "(none)";
+          const choices = Object.keys(MODES).concat(CUSTOM_MODE_NAME);
           const choice = await ctx.ui.select(`Switch mode — current: ${current}`, choices);
           if (choice === undefined) return;
-          if (choice === "off") {
-            await rm(STATE_FILE, { force: true });
-            await clearMode(ctx, true);
-          } else if (choice === CUSTOM_MODE_NAME) {
+          if (choice === CUSTOM_MODE_NAME) {
             // custom always opens the editor; it opens pre-filled with the
             // cursor on "save & continue", so re-applying the saved mapping
             // unchanged is just enter.
             if (await openCustomModeEditor(pi, ctx)) {
-              await rm(STATE_FILE, { force: true }); // picker switches are session-local
+              await persistMode(choice);
             }
           } else if (await applyMode(pi, ctx, choice, true)) {
-            await rm(STATE_FILE, { force: true }); // picker switches are session-local
+            await persistMode(choice);
           }
           return;
         }
@@ -862,8 +909,12 @@ export default function (pi: ExtensionAPI) {
       }
 
       if (namePart === "off") {
-        await rm(STATE_FILE, { force: true });
-        await clearMode(ctx, true);
+        // A mode is always active: "off" resets to the default mode.
+        const def = await defaultModeName();
+        if (await applyMode(pi, ctx, def, true)) {
+          await persistMode(def);
+          if (ctx.hasUI) ctx.ui.notify(`mode: reset to default (${def})`, "info");
+        }
         return;
       }
 
@@ -879,23 +930,13 @@ export default function (pi: ExtensionAPI) {
       if (name === CUSTOM_MODE_NAME) {
         // custom always opens the editor ("edit" accepted as a no-op word).
         if (await openCustomModeEditor(pi, ctx)) {
-          if (keep) {
-            await writeFile(STATE_FILE, `${JSON.stringify({ mode: name }, null, 2)}\n`, "utf8");
-            if (ctx.hasUI) ctx.ui.notify(`mode ${name} kept for future pi instances`, "info");
-          } else {
-            await rm(STATE_FILE, { force: true }); // switching without keep clears persistence
-          }
+          await persistMode(name);
         }
         return;
       }
 
       if (await applyMode(pi, ctx, name, true)) {
-        if (keep) {
-          await writeFile(STATE_FILE, `${JSON.stringify({ mode: name }, null, 2)}\n`, "utf8");
-          if (ctx.hasUI) ctx.ui.notify(`mode ${name} kept for future pi instances`, "info");
-        } else {
-          await rm(STATE_FILE, { force: true }); // switching without keep clears persistence
-        }
+        await persistMode(name);
       }
     },
   });

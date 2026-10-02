@@ -2,6 +2,7 @@
 name: oracle
 aliases: expert, expensive, high, big
 description: Expensive independent second opinion for consequential, high-risk, or genuinely difficult decisions; investigates and advises without editing files.
+model: zai/glm-5.3
 thinking: max
 systemPromptMode: append
 inheritProjectContext: true

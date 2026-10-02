@@ -2,6 +2,7 @@
 name: fast
 aliases: cheap, low, small
 description: Fast, lower-cost general agent for code exploration, external research, mechanical edits, bounded tasks, and repetitive implementation or validation work.
+model: zai/glm-5.3-flash
 thinking: low
 systemPromptMode: append
 inheritProjectContext: true
