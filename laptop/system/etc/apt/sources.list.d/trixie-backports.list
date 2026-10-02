@@ -1,0 +1,6 @@
+# Debian trixie backports, pinned at priority 100 by default: packages are
+# only pulled with an explicit `apt install -t trixie-backports <pkg>`.
+# Needed for tmux >= 3.6, which fixes pasted newlines being re-encoded as
+# CSI-u escape sequences when an app (nvim) enables the kitty keyboard
+# protocol (tmux issues #4663 / #4163).
+deb http://deb.debian.org/debian trixie-backports main contrib non-free non-free-firmware
