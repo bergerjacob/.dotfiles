@@ -14,6 +14,7 @@ Shared configuration stays at the repository root or in an application directory
 
 - `sway/`: shared Sway behavior and helper scripts.
 - `chrome/`: shared desktop entries that call the selected machine's `dotfiles-chrome` wrapper.
+- `applications/`: shared desktop entries that launch through the profile-overridden `bin/` wrappers, so the entry itself stays machine-neutral.
 - `nvim/`, `opencode/`, `waybar/`, and similar directories: shared application configuration.
 - `pi/agent/`: shared declarative Pi settings, agents, keybindings, and user-authored resources; credentials, sessions, and installed package data remain machine-local.
 - `packages`: packages required on both machines.
@@ -102,6 +103,7 @@ The PC profile must preserve the NVIDIA/XWayland behavior unless a change is exp
 - `pc/bin/start-sway` exports the NVIDIA, DRM, cursor, explicit-sync, VRR, and desktop environment values and launches `sway --unsupported-gpu`.
 - `pc/config/dotfiles/shell-profile.sh` preserves the NVIDIA environment in interactive shells.
 - `pc/bin/dotfiles-chrome` intentionally uses `--ozone-platform=x11` with NVIDIA VA-API flags.
+- Discord and Discord PTB keep their NVIDIA/XWayland flags via `pc/bin/discord` / `pc/bin/discord-ptb`, which pass the flags and also export `ELECTRON_OZONE_PLATFORM_HINT=x11`. The environment variable is what survives Discord's own bare-argv host relaunch, since the environment is inherited. Do NOT rewrite files inside `~/.config/discord*`: an earlier attempt that moved the Electron ELF aside and wrapped it in the app tree broke Discord's host update and left it stuck on "manual update required". The shared `bin/discord*` wrappers and `applications/*.desktop` entries stay machine-neutral; only the PC profile adds the flags.
 - PC Chrome, PWA, Discord, Zoom, Cursor, and OpenCode XWayland identities stay in `pc/config/sway/machine-rules.conf`.
 - The desktop output modes, Rofi monitor selection, and existing `~/Scripts` commands stay in `pc/config/sway/machine.conf`.
 - OpenRGB, webcam, v4l2loopback, udev, and NVIDIA system files remain PC-only.
