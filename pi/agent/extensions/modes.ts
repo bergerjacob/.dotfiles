@@ -94,13 +94,13 @@ const CUSTOM_FILE = join(AGENT_DIR, "modes-custom.json");
 
 const MODES: Record<string, Mode> = {
   openai: {
-    description: "All OpenAI via Codex subscription",
-    primary: { model: "openai-codex/gpt-5.6-sol", thinking: "high" },
+    description: "All OpenAI GPT-6 via Codex subscription",
+    primary: { model: "openai-codex/gpt-6.1-sol", thinking: "high" },
     agents: {
-      fast: { model: "openai-codex/gpt-5.6-luna", thinking: "low" },
-      standard: { model: "openai-codex/gpt-5.6-terra", thinking: "medium" },
-      oracle: { model: "openai-codex/gpt-5.6-sol", thinking: "high" },
-      vision: null, // gpt-5.6 sees images natively; no vision sidecar wanted
+      fast: { model: "openai-codex/gpt-6-luna", thinking: "low" },
+      standard: { model: "openai-codex/gpt-6.1-sol", thinking: "medium" },
+      oracle: { model: "openai-codex/gpt-6-astra", thinking: "high" },
+      vision: null, // gpt-6.1 sees images natively; no vision sidecar wanted
     },
   },
   glm: {
@@ -111,6 +111,22 @@ const MODES: Record<string, Mode> = {
       standard: { model: "zai/glm-5.3", thinking: "high" },
       oracle: { model: "zai/glm-5.3", thinking: "max" },
       vision: { model: "zai/glm-5.3-flash", thinking: "low" },
+    },
+  },
+  // Everything on the OpenCode Go subscription (one API key, dollar-based
+  // limits). DeepSeek V4.1 Flash is the best-bang-for-buck tier on Go
+  // (~26k req/5h at Flash pricing, multimodal) and carries both the primary
+  // and the mechanical fast slot, differing only in thinking level; GLM-5.3
+  // has the strongest agentic-coding results and Kimi K3 the long-horizon
+  // reasoning.
+  opencode: {
+    description: "OpenCode Go — DeepSeek V4.1 Flash primary, everything on one Go subscription",
+    primary: { model: "opencode-go/deepseek-v4.1-flash", thinking: "high" },
+    agents: {
+      fast: { model: "opencode-go/deepseek-v4.1-flash", thinking: "low" },
+      standard: { model: "opencode-go/glm-5.3", thinking: "high" },
+      oracle: { model: "opencode-go/kimi-k3", thinking: "max" },
+      vision: null, // v4.1-flash sees images natively; no vision sidecar wanted
     },
   },
 };
@@ -856,7 +872,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("mode", {
     description:
-      "Model preset for primary + subagents: /mode <openai|glm|custom>, /mode off (reset to default), or /mode for a picker (custom opens the table editor)",
+      "Model preset for primary + subagents: /mode <openai|glm|opencode|custom>, /mode off (reset to default), or /mode for a picker (custom opens the table editor)",
     getArgumentCompletions: (prefix: string): AutocompleteItem[] | null => {
       const items: AutocompleteItem[] = [
         ...Object.entries(MODES).map(([name, mode]) => ({
