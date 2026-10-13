@@ -85,6 +85,15 @@ apply() {
 # changes EDID the kernel can advertise 4K60 while Sway still cannot see it.
 # That is not fixable from here (a mode set from a stale list leaves the output
 # in DPMS off), so point the user at the command that is.
+# Non-interactive repair, possible only once the narrow sudoers rule from
+# pc/bin/setup-hdmi-reprobe-sudo.sh is installed. Returns non-zero when it
+# cannot even be attempted, so the caller falls back to telling the user.
+repair_stale() {
+  local helper=/usr/local/libexec/dotfiles-hdmi-reprobe
+  [ -x "$helper" ] || return 1
+  sudo -n "$helper" "$OUTPUT" >/dev/null 2>&1
+}
+
 stale_notified=""
 warn_if_stale() {
   local status_path modes_path kernel_count sway_count
@@ -101,10 +110,22 @@ warn_if_stale() {
   if [ "${kernel_count:-0}" -gt "${sway_count:-0}" ]; then
     if [ "$stale_notified" != "$kernel_count" ]; then
       stale_notified=$kernel_count
-      notify-send -u normal \
-        'TV is offering 4K60 but Sway cannot see it' \
-        'Run  dotfiles-hdmi-reprobe  so Sway re-reads the TV and goes back to 3840x2160@60Hz.' \
-        >/dev/null 2>&1 || true
+      if repair_stale; then
+        # The reprobe forced a real reconnect, so Sway has rebuilt the output.
+        # apply() would pick the mode up on the next pass; do it now so the
+        # recovery is immediate.
+        sleep 2
+        apply
+        notify-send -u low \
+          'TV output repaired automatically' \
+          'Sway re-read the TV and went back to 3840x2160@60Hz.' \
+          >/dev/null 2>&1 || true
+      else
+        notify-send -u normal \
+          'TV is offering 4K60 but Sway cannot see it' \
+          'Run  dotfiles-hdmi-reprobe  -  or install the sudo rule (./setup.sh pc) to make this automatic.' \
+          >/dev/null 2>&1 || true
+      fi
     fi
   else
     stale_notified=""
