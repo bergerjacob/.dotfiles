@@ -10,8 +10,15 @@
 #   4K60 while Sway's cached mode list still cannot see it, and Sway sits at
 #   3840x2160@30Hz.
 #
-#   Forcing the connector's DRM force-state on and back to "detect" makes the
-#   kernel emit that hotplug event, so Sway rebuilds the output's mode list.
+#   Sway only rebuilds an output's mode list when the connector actually
+#   transitions disconnected -> connected, because that is when it destroys and
+#   recreates the output. Changing only the DRM *force* state (writing "on" or
+#   "detect" while the connector is already reported connected) produces a
+#   hotplug the compositor ignores, since the status never changed — which is
+#   also why `output disable/enable`, a DPMS cycle and `swaymsg reload` all
+#   leave the stale list in place. So this forces a real transition: "off" makes
+#   the kernel report the connector disconnected, then "detect" hands it back to
+#   normal HPD detection, which reconnects it and rebuilds the output.
 #
 # Order of operations when the TV has reset:
 #   1. On the TV, turn Input Signal Plus back ON for the HDMI port in use.
@@ -46,11 +53,22 @@ device=$(basename "$(dirname "$status")")
 echo "Forcing a hotplug on $device"
 
 if [ "$dry_run" = 1 ]; then
-  echo "would run: sudo sh -c \"echo on > '$status'; sleep 1; echo detect > '$status'\""
+  echo "would run: sudo sh -c \"echo off > '$status'; sleep 2; echo detect > '$status'\""
   exit 0
 fi
 
-sudo sh -c "echo on > '$status'; sleep 1; echo detect > '$status'"
+# "off" then "detect", not "on": the reported status has to actually change for
+# the compositor to rebuild the output and re-read the EDID modes.
+ROOT_HELPER=/usr/local/libexec/dotfiles-hdmi-reprobe
+if [ -x "$ROOT_HELPER" ]; then
+  # Same sequence, but through the narrow sudoers rule
+  # (pc/bin/setup-hdmi-reprobe-sudo.sh), so it can also run unattended.
+  if ! sudo -n "$ROOT_HELPER" "$connector" 2>/dev/null; then
+    sudo "$ROOT_HELPER" "$connector"
+  fi
+else
+  sudo sh -c "echo off > '$status'; sleep 2; echo detect > '$status'"
+fi
 sleep 2
 
 if swaymsg -t get_outputs -r | jq -e --arg o "$connector" '
