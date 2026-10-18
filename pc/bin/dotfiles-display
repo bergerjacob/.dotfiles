@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+# dotfiles-display — recover the PC profile's TV output after the TV changes
+# what it advertises.
+#
+# Why this exists:
+#   The Samsung TV periodically drops its "Input Signal Plus" setting and then
+#   serves a reduced HDMI-1.4 EDID whose highest mode is 3840x2160@30.
+#   machine.conf asks for 3840x2160@60Hz; when that mode is not advertised the
+#   request fails and the output falls back to a mode that may not be what we
+#   want. When Sway does offer the better mode again, nothing selects it.
+#
+# The trap this avoids:
+#   Sway caches each output's mode list when the output is enumerated and never
+#   re-reads it on an EDID change. Setting a mode from that stale list does not
+#   just fail — the NVIDIA driver leaves the output in DPMS off and the TV shows
+#   "check device power". Sway's IPC "output" event also fires for ordinary
+#   config changes, and its "change" field is always "unspecified", so an event
+#   alone does not prove the mode list is fresh.
+#
+# So the rule here is: apply a mode only when the output's mode list has
+# actually been rebuilt, which is what a replug / hotplug does. Anything else
+# (a `swaymsg reload`, a mode change, an idle tick with the same list) is left
+# alone. That keeps this from ever modesetting against a stale list.
+#
+#   It also watches for the one case it cannot fix by itself: the TV serving
+#   4K60 while Sway's cached list still cannot see it. That needs a DRM
+#   hotplug (see dotfiles-hdmi-reprobe), so it raises a desktop notification
+#   instead of silently sitting at 30Hz.
+set -euo pipefail
+
+OUTPUT=${DOTFILES_DISPLAY_OUTPUT:-HDMI-A-1}
+POSITION_X=${DOTFILES_DISPLAY_X:-1920}
+POSITION_Y=${DOTFILES_DISPLAY_Y:-0}
+
+# Resolution is preferred over refresh rate: the TV is 3840x2160 native, and
+# 1080p on it gets upscaled 2x so everything looks oversized. Within one size
+# the higher refresh rate wins, so 3840x2160@60 beats 3840x2160@30.
+# Prints "<desired>\t<current>", each as WxH@RHz or "-" when unknown.
+modes() {
+  swaymsg -t get_outputs -r | jq -r --arg o "$OUTPUT" '
+    def fmt(m): "\(m.width)x\(m.height)@\(m.refresh / 1000)Hz";
+    def rank(m):
+      if   m.width == 3840 and m.height == 2160 then 3
+      elif m.width == 2560 and m.height == 1440 then 2
+      elif m.width == 1920 and m.height == 1080 then 1
+      else 0 end;
+    [ .[] | select(.name == $o) ] | first
+    | if . == null then empty
+      else
+        ( [ .modes[] ]
+          | if length == 0 then "-"
+            else sort_by([rank(.), (if .refresh >= 59000 then 1 else 0 end), .refresh])
+                 | last | fmt(.)
+            end )
+        + "\t"
+        + (if .current_mode == null then "-" else fmt(.current_mode) end)
+      end
+  '
+}
+
+# Fingerprint of the mode list. A replug replaces it, so a changed fingerprint
+# is the only reliable "the list is fresh, safe to modeset" signal we get.
+fingerprint() {
+  swaymsg -t get_outputs -r | jq -r --arg o "$OUTPUT" '
+    [ .[] | select(.name == $o) ]
+    | if length == 0 then "absent"
+      else ( .[0].modes | map("\(.width)x\(.height)@\(.refresh)") | join(",") )
+      end
+  ' | md5sum | cut -d' ' -f1
+}
+
+apply() {
+  local line desired current
+  line=$(modes 2>/dev/null) || return 0
+  [ -n "$line" ] || return 0
+  desired=${line%%$'\t'*}
+  current=${line##*$'\t'}
+  [ "$desired" != "$current" ] || return 0
+  [ "$desired" != "-" ] || return 0
+  swaymsg output "$OUTPUT" mode "$desired" \
+    position "$POSITION_X" "$POSITION_Y" >/dev/null 2>&1 || true
+}
+
+# Sway rebuilds an output's mode list only on a DRM hotplug, so after the TV
+# changes EDID the kernel can advertise 4K60 while Sway still cannot see it.
+# That is not fixable from here (a mode set from a stale list leaves the output
+# in DPMS off), so point the user at the command that is.
+# Non-interactive repair, possible only once the narrow sudoers rule from
+# pc/bin/setup-hdmi-reprobe-sudo.sh is installed. Returns non-zero when it
+# cannot even be attempted, so the caller falls back to telling the user.
+repair_stale() {
+  local helper=/usr/local/libexec/dotfiles-hdmi-reprobe
+  [ -x "$helper" ] || return 1
+  sudo -n "$helper" "$OUTPUT" >/dev/null 2>&1
+}
+
+stale_notified=""
+warn_if_stale() {
+  local status_path modes_path kernel_count sway_count
+  for status_path in /sys/class/drm/*-"$OUTPUT"/status; do
+    [ -e "$status_path" ] && break
+  done
+  [ -e "${status_path:-}" ] || return 0
+  modes_path=${status_path%/status}/modes
+  [ -r "$modes_path" ] || return 0
+  kernel_count=$(grep -c '^3840x2160$' "$modes_path" || true)
+  sway_count=$(swaymsg -t get_outputs -r | jq --arg o "$OUTPUT" '
+      [ .[] | select(.name == $o) | .modes[]
+        | select(.width == 3840 and .height == 2160) ] | length')
+  if [ "${kernel_count:-0}" -gt "${sway_count:-0}" ]; then
+    if [ "$stale_notified" != "$kernel_count" ]; then
+      stale_notified=$kernel_count
+      if repair_stale; then
+        # The reprobe forced a real reconnect, so Sway has rebuilt the output.
+        # apply() would pick the mode up on the next pass; do it now so the
+        # recovery is immediate.
+        sleep 2
+        apply
+        notify-send -u low \
+          'TV output repaired automatically' \
+          'Sway re-read the TV and went back to 3840x2160@60Hz.' \
+          >/dev/null 2>&1 || true
+      else
+        notify-send -u normal \
+          'TV is offering 4K60 but Sway cannot see it' \
+          'Run  dotfiles-hdmi-reprobe  -  or install the sudo rule (./setup.sh pc) to make this automatic.' \
+          >/dev/null 2>&1 || true
+      fi
+    fi
+  else
+    stale_notified=""
+  fi
+}
+
+# Only one watcher at a time, tracked by pidfile rather than flock: the
+# `swaymsg -t subscribe` child inherits any lock fd we hold, so killing this
+# script would leave that lock held for good and every later exec_always run
+# would silently exit with no watcher at all. A pidfile also lets a reload take
+# over with the current version of this script.
+pidfile="${XDG_RUNTIME_DIR:-/tmp}/dotfiles-display.pid"
+if [ -r "$pidfile" ]; then
+  previous=$(cat "$pidfile" 2>/dev/null || true)
+  if [ -n "${previous:-}" ] && kill -0 "$previous" 2>/dev/null; then
+    kill "$previous" 2>/dev/null || true
+    sleep 1
+  fi
+fi
+printf '%s\n' "$$" > "$pidfile"
+trap 'pkill -P $$ >/dev/null 2>&1 || true; rm -f "$pidfile"' EXIT INT TERM
+
+last=$(fingerprint)
+# read -t returns >128 on timeout, and 1 on EOF (sway gone).
+while :; do
+  status=0
+  read -r -t 15 _event || status=$?
+  if [ "$status" -gt 0 ] && [ "$status" -le 128 ]; then
+    break
+  fi
+  if [ "$status" -eq 0 ]; then
+    sleep 1
+  fi
+  current=$(fingerprint)
+  if [ "$current" != "$last" ]; then
+    last=$current
+    apply
+  fi
+  warn_if_stale
+done < <(swaymsg -t subscribe -m '["output"]')

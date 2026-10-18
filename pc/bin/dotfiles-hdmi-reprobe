@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# dotfiles-hdmi-reprobe — make Sway re-read an HDMI connector's EDID.
+#
+# Why this is needed:
+#   The TV drops its "Input Signal Plus" setting every time the HDMI cable is
+#   reconnected, and then serves a reduced HDMI-1.4 EDID with no 4K60. Turning
+#   the setting back on makes the TV serve the full EDID again, but the
+#   connector's connect status never changes, so the kernel does not emit the
+#   DRM hotplug uevent that wlroots waits for. The kernel ends up advertising
+#   4K60 while Sway's cached mode list still cannot see it, and Sway sits at
+#   3840x2160@30Hz.
+#
+#   Sway only rebuilds an output's mode list when the connector actually
+#   transitions disconnected -> connected, because that is when it destroys and
+#   recreates the output. Changing only the DRM *force* state (writing "on" or
+#   "detect" while the connector is already reported connected) produces a
+#   hotplug the compositor ignores, since the status never changed — which is
+#   also why `output disable/enable`, a DPMS cycle and `swaymsg reload` all
+#   leave the stale list in place. So this forces a real transition: "off" makes
+#   the kernel report the connector disconnected, then "detect" hands it back to
+#   normal HPD detection, which reconnects it and rebuilds the output.
+#
+# Order of operations when the TV has reset:
+#   1. On the TV, turn Input Signal Plus back ON for the HDMI port in use.
+#   2. Run this script. It needs root for the sysfs write, so sudo will prompt.
+#
+# Use --dry-run to just print what it would do.
+set -euo pipefail
+
+connector=${1:-HDMI-A-1}
+dry_run=0
+if [ "${1:-}" = "--dry-run" ]; then
+  connector=HDMI-A-1
+  dry_run=1
+elif [ "${2:-}" = "--dry-run" ]; then
+  dry_run=1
+fi
+
+status=
+for candidate in /sys/class/drm/*-"$connector"/status; do
+  if [ -e "$candidate" ]; then
+    status=$candidate
+    break
+  fi
+done
+
+if [ -z "$status" ]; then
+  echo "dotfiles-hdmi-reprobe: no connector matching '$connector' under /sys/class/drm" >&2
+  exit 1
+fi
+
+device=$(basename "$(dirname "$status")")
+echo "Forcing a hotplug on $device"
+
+if [ "$dry_run" = 1 ]; then
+  echo "would run: sudo sh -c \"echo off > '$status'; sleep 2; echo detect > '$status'\""
+  exit 0
+fi
+
+# "off" then "detect", not "on": the reported status has to actually change for
+# the compositor to rebuild the output and re-read the EDID modes.
+ROOT_HELPER=/usr/local/libexec/dotfiles-hdmi-reprobe
+if [ -x "$ROOT_HELPER" ]; then
+  # Same sequence, but through the narrow sudoers rule
+  # (pc/bin/setup-hdmi-reprobe-sudo.sh), so it can also run unattended.
+  if ! sudo -n "$ROOT_HELPER" "$connector" 2>/dev/null; then
+    sudo "$ROOT_HELPER" "$connector"
+  fi
+else
+  sudo sh -c "echo off > '$status'; sleep 2; echo detect > '$status'"
+fi
+sleep 2
+
+if swaymsg -t get_outputs -r | jq -e --arg o "$connector" '
+    [ .[] | select(.name == $o) | .modes[]
+      | select(.width == 3840 and .height == 2160 and .refresh >= 59900) ] | length > 0
+  ' >/dev/null; then
+  # Only safe to set now that Sway demonstrably advertises 4K60; setting a mode
+  # from a stale list is what leaves the output in DPMS off.
+  swaymsg output "$connector" mode 3840x2160@60Hz >/dev/null 2>&1 || true
+  echo "Sway now sees 4K60; applied 3840x2160@60Hz."
+else
+  echo "Sway still cannot see 4K60 on $connector." >&2
+  echo "Check on the TV that Input Signal Plus is ON for the HDMI port in use, then re-run." >&2
+  exit 1
+fi

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Machine-neutral Discord launcher used by the shared applications/*.desktop
+# entries. Profile trees override this name with the machine-specific variant
+# (pc/bin/discord adds the NVIDIA/XWayland flags for Sway).
+exec /usr/bin/discord "$@"

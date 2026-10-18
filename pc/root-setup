@@ -1,1 +1,2 @@
 bin/setup-camera-sudo.sh
+bin/setup-hdmi-reprobe-sudo.sh

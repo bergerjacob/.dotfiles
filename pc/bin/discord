@@ -1,6 +1,13 @@
 #!/bin/bash
-# NVIDIA + Sway: force the stable XWayland path and avoid DMA-BUF mmap flickering.
-# Matches the recipe from sway-nvidia-debug-log.md (same as cursor / opencode-desktop wrappers).
-# Discord's host updater relaunches the binary with bare argv after version updates,
-# dropping these flags; relaunch via this wrapper (or the .desktop override) afterwards.
+# NVIDIA + Sway: keep Discord on the stable XWayland path and avoid DMA-BUF
+# mmap flickering.
+#
+# The flags are passed on the command line for launches that come through here,
+# and the XWayland choice is ALSO exported as ELECTRON_OZONE_PLATFORM_HINT so it
+# survives Discord's own relaunches: its host updater restarts a new
+# app-<version>/ host with bare argv, which drops command-line flags, but the
+# environment is inherited. Doing it this way means nothing inside
+# ~/.config/discord has to be touched — an earlier attempt that rewrote the app
+# trees broke Discord's host update and left it stuck asking for a manual update.
+export ELECTRON_OZONE_PLATFORM_HINT=x11
 exec /usr/bin/discord --ozone-platform=x11 --disable-gpu-memory-buffer-video-frames "$@"

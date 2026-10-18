@@ -1,0 +1,44 @@
+#!/bin/bash
+# dotfiles-hdmi-reprobe (root helper) — force a real disconnected -> connected
+# transition on a DRM connector, so the Wayland compositor destroys and rebuilds
+# that output and therefore re-reads the EDID's mode list.
+#
+# Why this exists: Sway keeps an output's mode list from the moment the output
+# was created and only rebuilds it when the connector genuinely transitions
+# disconnected -> connected. Changing the DRM *force* state while the connector
+# still reports "connected" produces a hotplug the compositor ignores, which is
+# why `output disable/enable`, a DPMS cycle, `swaymsg reload` and a bare
+# force-on all leave a stale list behind. Writing "off" makes the kernel report
+# the connector as disconnected; writing "detect" hands it back to normal HPD
+# detection, which reconnects it. That pair is the transition.
+#
+# Installed root-owned by setup.sh from pc/system/usr/local/libexec/ and reached
+# through a narrow sudoers rule (pc/bin/setup-hdmi-reprobe-sudo.sh). The argument
+# is validated here so that rule can stay a plain wildcard.
+set -euo pipefail
+
+connector=${1:-HDMI-A-1}
+
+case "$connector" in
+  '' | *[!A-Za-z0-9-]*)
+    echo "dotfiles-hdmi-reprobe: invalid connector name '$connector'" >&2
+    exit 2
+    ;;
+esac
+
+status=""
+for candidate in /sys/class/drm/card*-"$connector"/status; do
+  if [ -e "$candidate" ]; then
+    status=$candidate
+    break
+  fi
+done
+
+if [ -z "$status" ]; then
+  echo "dotfiles-hdmi-reprobe: no connector matching '$connector' under /sys/class/drm" >&2
+  exit 2
+fi
+
+echo off > "$status"
+sleep 2
+echo detect > "$status"

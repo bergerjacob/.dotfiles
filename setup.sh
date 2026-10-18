@@ -222,6 +222,12 @@ setup_links() {
     link_path "$desktop_file" "$HOME/.local/share/applications/$(basename "$desktop_file")"
   done
 
+  # Shared application entries launch through the profile-overridden wrappers
+  # in ~/.local/bin, so the entry itself stays machine-neutral.
+  for desktop_file in "$DOTFILES_DIR"/applications/*.desktop; do
+    link_path "$desktop_file" "$HOME/.local/share/applications/$(basename "$desktop_file")"
+  done
+
   # Shared executables land in ~/.local/bin for every machine profile.
   # (The shim files detect their own devices/capabilities, so one copy serves
   # laptop and PC.) A profile tree may still override a shared name — it is

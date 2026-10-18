@@ -45,6 +45,7 @@
       "skills": [],
       "prompts": [],
       "themes": []
-    }
+    },
+    "npm:@bizmyth/pi-neovim-editor"
   ]
 }

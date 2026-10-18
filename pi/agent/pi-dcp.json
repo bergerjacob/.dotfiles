@@ -19,10 +19,10 @@
     "minContextLimit": "25%",
     "maxContextLimit": "50%",
     "modelMinLimits": {
-      "openai-codex/gpt-5.6-sol": "25%"
+      "openai-codex/gpt-6.1-sol": "25%"
     },
     "modelMaxLimits": {
-      "openai-codex/gpt-5.6-sol": "50%"
+      "openai-codex/gpt-6.1-sol": "50%"
     },
     "nudgeEveryTurns": 1,
     "nudgeFrequency": 1,
