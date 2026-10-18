@@ -9,6 +9,7 @@ x-scheme-handler/mailto=google-chrome.desktop
 message/rfc822=userapp-Thunderbird-Z4RZ92.desktop
 x-scheme-handler/mid=userapp-Thunderbird-Z4RZ92.desktop
 x-scheme-handler/everest=/home/bergerj/.local/share/applications/Olympus.desktop
+x-scheme-handler/codex=chatgpt.desktop
 
 [Added Associations]
 application/pdf=google-chrome.desktop;
