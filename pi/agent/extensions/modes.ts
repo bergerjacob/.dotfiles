@@ -42,6 +42,9 @@
 // - Subagents: every `subagent` tool call gets the mode's model/thinking injected
 //   as a per-run override, which outranks agent frontmatter. Explicit model in a
 //   tool call always wins. No config files are modified, so git stays clean.
+//   The thinking level is carried as a `provider/id:level` model suffix, because
+//   pi-subagents' child schema accepts only `model` (a bare `thinking` field is
+//   ignored, which would let the agent frontmatter level win).
 // - Agent slots set to none (x in the editor, null in the mapping) are disabled
 //   for that mode: launches are blocked with a clear reason and the slot is
 //   omitted from the parent's mode note. Keys absent from a hand-edited mapping
@@ -127,6 +130,21 @@ const MODES: Record<string, Mode> = {
       standard: { model: "opencode-go/glm-5.3", thinking: "high" },
       oracle: { model: "opencode-go/kimi-k3", thinking: "max" },
       vision: null, // v4.1-flash sees images natively; no vision sidecar wanted
+    },
+  },
+  // Mixed combo: DeepSeek V4.1 Flash (OpenCode Go) carries the cheap volume
+  // work — primary at high thinking and the mechanical fast slot at low —
+  // while the two heavier slots (standard, oracle) run on the OpenAI Codex
+  // subscription, matching the `openai` preset's picks. Vision is disabled
+  // because v4.1-flash sees images natively.
+  "ds-gpt-combo": {
+    description: "DeepSeek V4.1 Flash primary+fast (OpenCode Go), OpenAI Codex for standard+oracle",
+    primary: { model: "opencode-go/deepseek-v4.1-flash", thinking: "high" },
+    agents: {
+      fast: { model: "opencode-go/deepseek-v4.1-flash", thinking: "low" },
+      standard: { model: "openai-codex/gpt-6.1-sol", thinking: "medium" },
+      oracle: { model: "openai-codex/gpt-6-astra", thinking: "high" },
+      vision: null,
     },
   },
 };
@@ -838,7 +856,11 @@ export default function (pi: ExtensionAPI) {
       if (record.model) return false; // explicit per-run choice wins
       const pick = pickFor(mode, typeof record.agent === "string" ? record.agent : undefined);
       if (!pick) return false;
-      record.model = pick.model;
+      // pi-subagents' child schema has no `thinking` field: the level must ride
+      // along as a `:level` suffix on the model string, or the agent's
+      // frontmatter level silently wins. The separate `thinking` field is kept
+      // for forward compatibility in case a future version honours it.
+      record.model = pick.thinking ? `${pick.model}:${pick.thinking}` : pick.model;
       if (pick.thinking && !record.thinking) record.thinking = pick.thinking;
       return true;
     };
@@ -872,7 +894,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("mode", {
     description:
-      "Model preset for primary + subagents: /mode <openai|glm|opencode|custom>, /mode off (reset to default), or /mode for a picker (custom opens the table editor)",
+      "Model preset for primary + subagents: /mode <openai|glm|opencode|ds-gpt-combo|custom>, /mode off (reset to default), or /mode for a picker (custom opens the table editor)",
     getArgumentCompletions: (prefix: string): AutocompleteItem[] | null => {
       const items: AutocompleteItem[] = [
         ...Object.entries(MODES).map(([name, mode]) => ({

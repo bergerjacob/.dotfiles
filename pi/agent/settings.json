@@ -9,7 +9,7 @@
     "!skills/agent-browser/**",
     "!skills/remotion-*/**"
   ],
-  "hideThinkingBlock": false,
+  "hideThinkingBlock": true,
   "compaction": {
     "enabled": true,
     "reserveTokens": 32768,
