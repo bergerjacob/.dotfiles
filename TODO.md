@@ -181,3 +181,30 @@
 ## agent-browser socket quirks (observed 2026-10-16)
 
 - Launch audit: socket creation under /run/user/1000 failed with read-only filesystem despite doctor reporting success. Workaround: a mode-0700 /tmp/lexel-browser-runtime directory via scoped XDG_RUNTIME_DIR. Suggested fix: configure writable harness socket storage and make doctor verify actual writability.
+
+## tmux pane capacity quirks (observed 2026-10-19)
+
+- 2026-10-19: Managed tmux run failed with `split-window failed: no space for new pane` while two pre-existing research panes were listed. Existing panes were left untouched. Workaround: short integrity validation ran as a bounded shell call; subsequent long research processes can use a separately named detached tmux session, tracked and cleaned explicitly. Suggested fix: provide a detached-session fallback when managed layout cannot split without touching unrelated panes.
+
+## Project dependency download quirks (observed 2026-10-19)
+
+- 2026-10-19: Research venv uv dependency resolution could not reach PyPI: configured-proxy tunnel failure; one per-command no-proxy attempt instead failed DNS. Browser-backed source fetches still worked. No packages/environment/dotfiles were changed. Workaround: continue with existing NumPy/SciPy and independently validated standard FE assembly. Suggested fix: repair supported outbound package-index access in the harness, not in this research repository.
+
+## Research CUDA access quirks (observed 2026-10-19)
+
+- 2026-10-19: Selected research interpreter reports Torch2.10.0+cu128/CUDA12.8 but torch.cuda.is_available() is false; initialization warns CUDA unknown error and resets available devices to zero. No driver/environment fixes attempted. Workaround: retain CPU-first numerical and model cost budgets. Suggested fix: verify GPU-device/driver visibility for the harness outside the research repository.
+
+## pi print-mode error visibility quirks (observed 2026-10-20)
+
+- 2026-10-20: `pi -p --no-session -e <ext> "prompt"` exits 0 with completely empty stdout/stderr when the provider request fails (here a zai 429 "Insufficient balance"), so a headless extension smoke test looks identical to a silent no-op. `--mode json` (or `--verbose`) surfaces the real error. Workaround: use `--mode json` for headless validation. Suggested fix: make text print mode print the stop reason/error and exit non-zero on provider failure.
+
+## subagent provider balance quirks (observed 2026-10-22)
+
+- 2026-10-22: All subagent tiers (fast/standard/oracle, GLM-backed) failed instantly with `429 {"code":"1113","message":"Insufficient balance or no resource package"}`; an async workflow of 4 children burned ~10 min before the failure surfaced as a "complete" run. Workaround: parent did the research/analysis itself with web_search/fetch_content. Suggested fix: recharge the provider (or add a fallback model per tier), and make workflow runs fail fast / notify when every child dies with a provider 429.
+
+## subagent workflowScript model-routing quirks (observed 2026-10-22, root cause of the earlier 429 entry)
+
+- 2026-10-22: Root cause of the "subagent provider balance" failures: the zai account is still out of balance (429 code 1113), and `workflowScript` calls (`runs.run` / `runs.all`) resolve each child's model from the agent frontmatter (`agents/{fast,standard,oracle}.md` -> `zai/glm-5.3*`), IGNORING the active mode in `modes-state.json` (currently `claude` -> `claude-bridge/claude-*`). Direct single-child calls (`{agent, task}`) DO honor the mode and work. Verified: same `fast` ping via direct call -> `claude-bridge/claude-haiku-5-5` OK (2-4 s); via workflowScript -> `zai/glm-5.3-flash` 429; via workflowScript + top-level `model: "claude-bridge/claude-haiku-5-5"` -> OK for fast and oracle. So it was not random and not a malformed call by me, but a harness inconsistency (and my own first attempt should have probed with a cheap direct ping before launching a 10-minute async fan-out).
+- Compounding issues: (a) a 429 is retried ~10 min (617 s observed) before failing, and the async workflow then reports state "complete" with every child failed; (b) a second `subagent` call in the same turn is rejected ("exactly ONE subagent call per turn") - fan-out must go inside one workflowScript.
+- Suggested fixes: make the workflowScript path apply the active mode's tier->model mapping (or fail fast on 429 / insufficient-balance without retrying), surface "all children failed" as a failed run, and/or recharge zai or repoint the agent frontmatter models. Agent-side workaround adopted: probe tiers with a cheap direct ping first, pass an explicit `model` on workflowScript calls, set `timeoutMs` to bound hangs.
+- 2026-10-22 (follow-up): Workaround applied in `pi/agent/extensions/modes.ts`: the `tool_call` hook now rewrites literal `agent: "x"` children in `workflowScript` to carry the active mode's per-child `model` and sets a top-level default `model` (the standard pick) as a fallback; scripts that already contain `model:` are untouched. Verified after reload: fast and oracle workflowScript pings with no explicit model ran on claude-haiku-5-5 and claude-opus-5-5. The upstream pi-subagents inconsistency (workflowScript ignoring the mode) is still unfixed.
