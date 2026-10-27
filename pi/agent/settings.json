@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.87.1",
+  "lastChangelogVersion": "1.3.0",
   "defaultProvider": "zai",
   "defaultModel": "glm-5.3",
   "defaultThinkingLevel": "high",
@@ -9,7 +9,7 @@
     "!skills/agent-browser/**",
     "!skills/remotion-*/**"
   ],
-  "hideThinkingBlock": true,
+  "hideThinkingBlock": false,
   "compaction": {
     "enabled": true,
     "reserveTokens": 32768,
@@ -46,6 +46,7 @@
       "prompts": [],
       "themes": []
     },
-    "npm:@bizmyth/pi-neovim-editor"
+    "npm:@bizmyth/pi-neovim-editor",
+    "npm:pi-claude-bridge"
   ]
 }
