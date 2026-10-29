@@ -5,7 +5,7 @@ const AUTO_ZOOM_OPTION = "@pi_auto_zoom";
 /**
  * Keep agent-managed tmux panes out of the user's way between turns.
  *
- * pi-tmux deliberately creates workers beside Pi. We leave that layout visible
+ * The local tmux-panes extension creates workers beside Pi. We leave that layout visible
  * while a command is being launched, then zoom Pi once the agent settles. The
  * pane option records that the zoom belongs to this extension so a user's own
  * manual zoom is never toggled accidentally and the state survives /reload.
