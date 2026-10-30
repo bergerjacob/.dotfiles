@@ -50,10 +50,11 @@
 //   omitted from the parent's mode note. Keys absent from a hand-edited mapping
 //   stay merely unpinned (agent frontmatter defaults apply), so agents the mode
 //   does not know about (e.g. package agents) are never blocked.
-// - A non-null `vision` slot adds one line to the parent's mode note: the parent
-//   cannot see images and must hand image paths plus a specific question to the
-//   vision agent. A null vision slot adds nothing, so vision-capable primaries
-//   get no image instructions at all.
+// - The image line in the parent's mode note follows the model that is actually
+//   running (ctx.model.input), not the shape of the mode: a model that accepts
+//   images is told to inspect them itself with `read`, and only a model that
+//   cannot see images is pointed at the `vision` slot (when one is enabled).
+//   Modes therefore never teach a vision-capable primary to delegate images.
 // - A mode is always active. The active mode is persisted to
 //   ~/.pi/agent/modes-state.json (machine-local, unmanaged) and restored at
 //   startup. With no saved state the preset whose primary matches the
@@ -61,9 +62,12 @@
 //   fallback — and /mode off resets to that default. Switching without
 //   credentials falls back through the other presets so a mode stays
 //   active whenever any model is usable.
-// - Known gap: children spawned inside workflowScript runs.run() calls bypass the
-//   tool-call hook. While a mode is active a short system-prompt note tells the
-//   parent to pass explicit per-child models, which covers that path in practice.
+// - workflowScript calls: children spawned by runs.run()/runs.all() take their
+//   model from agent frontmatter, ignoring the mode. The tool-call hook rewrites
+//   literal `agent: "x"` items to carry the mode's per-child `model`, and sets a
+//   top-level default `model` (the standard pick) as a safety net. A script that
+//   already contains `model:` is left alone. A short system-prompt note still
+//   asks the parent to pass explicit models, which also covers dynamic agents.
 //
 // Edit MODES below to tune models or add presets.
 
@@ -130,6 +134,34 @@ const MODES: Record<string, Mode> = {
       standard: { model: "opencode-go/glm-5.3", thinking: "high" },
       oracle: { model: "opencode-go/kimi-k3", thinking: "max" },
       vision: null, // v4.1-flash sees images natively; no vision sidecar wanted
+    },
+  },
+  // Claude Pro/Max plan quota through Claude Code itself: the pi-claude-bridge
+  // extension runs the authenticated `claude` CLI via the Claude Agent SDK, so
+  // requests bill against the subscription, never Anthropic API/extra usage.
+  claude: {
+    description: "Claude Code plan quota via claude-bridge — Sonnet 5.5 primary, Opus 5.5 oracle",
+    primary: { model: "claude-bridge/claude-sonnet-5-5", thinking: "high" },
+    agents: {
+      fast: { model: "claude-bridge/claude-haiku-5-5", thinking: "low" },
+      standard: { model: "claude-bridge/claude-sonnet-5-5", thinking: "high" },
+      oracle: { model: "claude-bridge/claude-opus-5-5", thinking: "high" },
+      vision: null, // Sonnet 5.5 sees images natively; no vision sidecar wanted
+    },
+  },
+  // Mixed combo: DeepSeek V4.1 Flash (OpenCode Go) carries the cheap volume
+  // work — primary at high thinking and the mechanical fast slot at low —
+  // while the two heavier slots (standard, oracle) run on Claude plan quota
+  // through claude-bridge, matching the `claude` preset's picks. Vision is
+  // disabled because v4.1-flash sees images natively.
+  "ds-claude-combo": {
+    description: "DeepSeek V4.1 Flash primary+fast (OpenCode Go), Claude plan quota for standard+oracle",
+    primary: { model: "opencode-go/deepseek-v4.1-flash", thinking: "high" },
+    agents: {
+      fast: { model: "opencode-go/deepseek-v4.1-flash", thinking: "low" },
+      standard: { model: "claude-bridge/claude-sonnet-5-5", thinking: "high" },
+      oracle: { model: "claude-bridge/claude-opus-5-5", thinking: "high" },
+      vision: null,
     },
   },
   // Mixed combo: DeepSeek V4.1 Flash (OpenCode Go) carries the cheap volume
@@ -225,6 +257,55 @@ function pickFor(mode: Mode, agentName: string | undefined): Pick | null | undef
 
 function formatPick(pick: Pick): string {
   return pick.thinking ? `${pick.model}:${pick.thinking}` : pick.model;
+}
+
+// Matches a literal `agent: "name"` property inside an object literal in a
+// workflowScript. The leading `{` or `,` keeps prose such as "(agent: 'fast')"
+// inside task strings from being rewritten.
+const WORKFLOW_AGENT_LITERAL = /([{,]\s*)(["']?agent["']?\s*:\s*)(["'])([A-Za-z0-9_-]+)\3/g;
+
+/** Routes workflowScript children through the active mode. Children launched
+ *  by runs.run()/runs.all() take their model from agent frontmatter and ignore
+ *  the mode, so a mode on another provider would still hit the frontmatter
+ *  provider (e.g. a 429 retried for ~10 minutes). Two layers:
+ *  - literal `agent: "x"` items get a per-child `model` after the agent;
+ *  - a top-level default `model` (the standard pick) covers anything the
+ *    rewrite cannot see (agent held in a variable, helper functions).
+ *  A script that already mentions `model:` is the parent's explicit choice and
+ *  is left untouched, as is an explicit top-level `model`. */
+function injectWorkflow(
+  mode: Mode,
+  input: Record<string, unknown> & { workflowScript: string },
+): { block: true; reason: string } | undefined {
+  let blocked: string | undefined;
+  for (const match of input.workflowScript.matchAll(WORKFLOW_AGENT_LITERAL)) {
+    const raw = match[4]!.toLowerCase();
+    const canonical = AGENT_ALIASES[raw] ?? raw;
+    if (canonical !== "main" && mode.agents[canonical] === null) {
+      blocked = canonical;
+      break;
+    }
+  }
+  if (blocked !== undefined) {
+    return { block: true, reason: `agent "${blocked}" is disabled in mode "${activeMode}"` };
+  }
+
+  if (!/\bmodel["']?\s*:/.test(input.workflowScript)) {
+    input.workflowScript = input.workflowScript.replace(
+      WORKFLOW_AGENT_LITERAL,
+      (whole, lead: string, key: string, quote: string, name: string) => {
+        const pick = pickFor(mode, name);
+        if (!pick) return whole;
+        return `${lead}${key}${quote}${name}${quote}, model: ${JSON.stringify(formatPick(pick))}`;
+      },
+    );
+  }
+
+  if (!input.model) {
+    const fallback = mode.agents.standard ?? mode.primary;
+    if (fallback) input.model = formatPick(fallback);
+  }
+  return undefined;
 }
 
 function modeSummary(name: string, mode: Mode): string {
@@ -825,14 +906,20 @@ export default function (pi: ExtensionAPI) {
 
   // Inject per-run overrides into every subagent launch (top precedence in
   // pi-subagents, so this outranks agent frontmatter without editing files).
-  pi.on("tool_call", async (event) => {
+  pi.on("tool_call", async (event, ctx) => {
     const mode = activeMode ? await getMode(activeMode) : undefined;
     if (!mode || event.toolName !== "subagent") return;
 
     const input = event.input as Record<string, unknown> | undefined;
     if (!input || typeof input !== "object") return;
-    // Orchestration scripts, resumes, and management actions are left alone.
-    if (input.action || input.workflowScript || input.resume) return;
+    // Management actions and resumes are left alone.
+    if (input.action || input.resume) return;
+
+    // workflowScript children resolve their model from agent frontmatter, not
+    // from the mode, so route them through the mode explicitly.
+    if (typeof input.workflowScript === "string") {
+      return injectWorkflow(mode, input as Record<string, unknown> & { workflowScript: string });
+    }
 
     // Slots explicitly disabled in this mode (null) are blocked at launch so a
     // mode can retire an agent without deleting its definition.
@@ -847,7 +934,13 @@ export default function (pi: ExtensionAPI) {
     check(input);
     if (Array.isArray(input.tasks)) input.tasks.forEach(check);
     if (blocked !== undefined) {
-      return { block: true, reason: `agent "${blocked}" is disabled in mode "${activeMode}"` };
+      // A blocked vision hand-off is nearly always a parent that forgot it can
+      // read images itself, so say that instead of only naming the mode.
+      const hint =
+        blocked === "vision" && ctx.model?.input?.includes("image")
+          ? " — your model sees images: read the image path directly"
+          : "";
+      return { block: true, reason: `agent "${blocked}" is disabled in mode "${activeMode}"${hint}` };
     }
 
     const inject = (item: unknown): boolean => {
@@ -873,28 +966,33 @@ export default function (pi: ExtensionAPI) {
 
   // Nudge the parent to carry explicit models into workflowScript children,
   // which the tool-call hook cannot reach.
-  pi.on("before_agent_start", async (event) => {
+  pi.on("before_agent_start", async (event, ctx) => {
     const mode = activeMode ? await getMode(activeMode) : undefined;
     if (!mode || process.env.PI_SUBAGENT_CHILD === "1") return;
     const agents = Object.entries(mode.agents)
       .filter((entry): entry is [string, Pick] => entry[1] !== null)
       .map(([agent, pick]) => `${agent}=${formatPick(pick)}`)
       .join(", ");
-    // Only modes that configure a vision sidecar teach the parent image rules;
-    // without one the parent gets no image instructions at all.
-    const visionNote = mode.agents.vision
-      ? " A vision agent is enabled: you cannot see images, and reading image files returns no visual content to you. Pass exact image paths plus a specific question to the vision agent instead — single images or batches."
-      : "";
+    // Image rules follow the running model, not the mode: pi attaches images to
+    // `read` results only when the model accepts them, so a model that does is
+    // told to look itself and never pushed toward the vision slot. A model that
+    // cannot see images already gets pi's own "image omitted" note on read.
+    const seesImages = ctx.model?.input?.includes("image") === true;
+    const visionNote = seesImages
+      ? " You can see images yourself: `read` on an image path attaches it to your context, so inspect screenshots directly instead of delegating image work."
+      : mode.agents.vision
+        ? " A vision agent is enabled: you cannot see images, and reading image files returns no visual content to you. Pass exact image paths plus a specific question to the vision agent instead — single images or batches."
+        : "";
     return {
       systemPrompt: `${event.systemPrompt}\n\nActive model mode: ${activeMode} (primary ${formatPick(
         mode.primary,
-      )}). When spawning subagents inside workflowScript runs.run() calls, pass these explicit per-child model overrides: ${agents}.${visionNote}`,
+      )}). Subagent launches, including literal agent children in workflowScript, get these models injected automatically (${agents}); pass an explicit model only to override a tier.${visionNote}`,
     };
   });
 
   pi.registerCommand("mode", {
     description:
-      "Model preset for primary + subagents: /mode <openai|glm|opencode|ds-gpt-combo|custom>, /mode off (reset to default), or /mode for a picker (custom opens the table editor)",
+      "Model preset for primary + subagents: /mode <openai|glm|opencode|claude|ds-claude-combo|ds-gpt-combo|custom>, /mode off (reset to default), or /mode for a picker (custom opens the table editor)",
     getArgumentCompletions: (prefix: string): AutocompleteItem[] | null => {
       const items: AutocompleteItem[] = [
         ...Object.entries(MODES).map(([name, mode]) => ({

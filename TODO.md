@@ -190,3 +190,48 @@
 ## agent-browser socket quirks (observed 2026-10-16)
 
 - Launch audit: socket creation under /run/user/1000 failed with read-only filesystem despite doctor reporting success. Workaround: a mode-0700 /tmp/lexel-browser-runtime directory via scoped XDG_RUNTIME_DIR. Suggested fix: configure writable harness socket storage and make doctor verify actual writability.
+
+## tmux pane capacity quirks (observed 2026-10-19)
+
+- 2026-10-19: Managed tmux run failed with `split-window failed: no space for new pane` while two pre-existing research panes were listed. Existing panes were left untouched. Workaround: short integrity validation ran as a bounded shell call; subsequent long research processes can use a separately named detached tmux session, tracked and cleaned explicitly. Suggested fix: provide a detached-session fallback when managed layout cannot split without touching unrelated panes.
+
+## Project dependency download quirks (observed 2026-10-19)
+
+- 2026-10-19: Research venv uv dependency resolution could not reach PyPI: configured-proxy tunnel failure; one per-command no-proxy attempt instead failed DNS. Browser-backed source fetches still worked. No packages/environment/dotfiles were changed. Workaround: continue with existing NumPy/SciPy and independently validated standard FE assembly. Suggested fix: repair supported outbound package-index access in the harness, not in this research repository.
+
+## Research CUDA access quirks (observed 2026-10-19)
+
+- 2026-10-19: Selected research interpreter reports Torch2.10.0+cu128/CUDA12.8 but torch.cuda.is_available() is false; initialization warns CUDA unknown error and resets available devices to zero. No driver/environment fixes attempted. Workaround: retain CPU-first numerical and model cost budgets. Suggested fix: verify GPU-device/driver visibility for the harness outside the research repository.
+
+## pi print-mode error visibility quirks (observed 2026-10-20)
+
+- 2026-10-20: `pi -p --no-session -e <ext> "prompt"` exits 0 with completely empty stdout/stderr when the provider request fails (here a zai 429 "Insufficient balance"), so a headless extension smoke test looks identical to a silent no-op. `--mode json` (or `--verbose`) surfaces the real error. Workaround: use `--mode json` for headless validation. Suggested fix: make text print mode print the stop reason/error and exit non-zero on provider failure.
+
+## subagent provider balance quirks (observed 2026-10-22)
+
+- 2026-10-22: All subagent tiers (fast/standard/oracle, GLM-backed) failed instantly with `429 {"code":"1113","message":"Insufficient balance or no resource package"}`; an async workflow of 4 children burned ~10 min before the failure surfaced as a "complete" run. Workaround: parent did the research/analysis itself with web_search/fetch_content. Suggested fix: recharge the provider (or add a fallback model per tier), and make workflow runs fail fast / notify when every child dies with a provider 429.
+
+## subagent workflowScript model-routing quirks (observed 2026-10-22, root cause of the earlier 429 entry)
+
+- 2026-10-22: Root cause of the "subagent provider balance" failures: the zai account is still out of balance (429 code 1113), and `workflowScript` calls (`runs.run` / `runs.all`) resolve each child's model from the agent frontmatter (`agents/{fast,standard,oracle}.md` -> `zai/glm-5.3*`), IGNORING the active mode in `modes-state.json` (currently `claude` -> `claude-bridge/claude-*`). Direct single-child calls (`{agent, task}`) DO honor the mode and work. Verified: same `fast` ping via direct call -> `claude-bridge/claude-haiku-5-5` OK (2-4 s); via workflowScript -> `zai/glm-5.3-flash` 429; via workflowScript + top-level `model: "claude-bridge/claude-haiku-5-5"` -> OK for fast and oracle. So it was not random and not a malformed call by me, but a harness inconsistency (and my own first attempt should have probed with a cheap direct ping before launching a 10-minute async fan-out).
+- Compounding issues: (a) a 429 is retried ~10 min (617 s observed) before failing, and the async workflow then reports state "complete" with every child failed; (b) a second `subagent` call in the same turn is rejected ("exactly ONE subagent call per turn") - fan-out must go inside one workflowScript.
+- Suggested fixes: make the workflowScript path apply the active mode's tier->model mapping (or fail fast on 429 / insufficient-balance without retrying), surface "all children failed" as a failed run, and/or recharge zai or repoint the agent frontmatter models. Agent-side workaround adopted: probe tiers with a cheap direct ping first, pass an explicit `model` on workflowScript calls, set `timeoutMs` to bound hangs.
+- 2026-10-22 (follow-up): Workaround applied in `pi/agent/extensions/modes.ts`: the `tool_call` hook now rewrites literal `agent: "x"` children in `workflowScript` to carry the active mode's per-child `model` and sets a top-level default `model` (the standard pick) as a fallback; scripts that already contain `model:` are untouched. Verified after reload: fast and oracle workflowScript pings with no explicit model ran on claude-haiku-5-5 and claude-opus-5-5. The upstream pi-subagents inconsistency (workflowScript ignoring the mode) is still unfixed.
+
+## agent-browser domain allowlist quirks (observed 2026-10-22)
+
+- 2026-10-22: `agent-browser open` to the chunkbase slime finder page fails with `Network access to "www.chunkbase.com" is blocked (not in allowedDomains)`, so chunkbase can't be used as an independent reference for Minecraft tooling. Also, a bash tool call whose command text merely contained that URL was rejected with the same error (a URL scan seems to apply to command text, not only to browser navigation). Workaround: verified against public data from GitHub instead (slimy test map, UltraSlimeChunkFinder README). Suggested fix: add the chunkbase domain to allowedDomains if browser-based reference checks are wanted, and limit the URL scan to actual network commands.
+
+- 2026-10-24 (follow-up #2): the `modes.ts` workflowScript rewrite does not cover children whose `agent` is built through a helper (`const T=(id,t)=>({agent:'fast',...})`; only literal `agent: "x"` objects are rewritten), so a 12-child `runs.all` fan-out went to `zai/glm-5.3-flash` and all 12 failed with 429/1113 after ~10 min. Workaround: pass top-level `model: "claude-bridge/claude-haiku-5-5"` on the subagent call (or write literal `agent:` objects). Suggested fix: rewrite by AST/regex on any `agent:` property, or make workflowScript honor the active mode like direct calls do.
+
+## subagent_wait nonBlocking subscription quirks (observed 2026-10-24)
+- 2026-10-24: `subagent_wait {id, nonBlocking:true}` on a long async workflow fires "needs attention" every ~10-60 s while healthy children are merely "active but long-running" or have a silent tool open (no pending supervisor request, children writing files). Re-arming just produces another wake, so each wake burns a turn. Workaround: arm once, do not re-arm after a no-op wake; rely on default completion wake. Suggested fix: raise the attention threshold for children with recent file/tool activity, or de-duplicate wakes for the same attention reason.
+
+## agent bash sandbox quirks (observed 2026-10-25)
+- 2026-10-25: the agent `bash` tool runs inside bwrap with `--unshare-pid`, so `pgrep`/`ps` there cannot see processes started in tmux windows (including the agent's own long job), and `pgrep -fc experiments/venv/bin/python` "fleet quiet" checks are blind to other agents' jobs. Workaround: read `/proc/loadavg`, or run the monitor/`ps` inside a tmux window (outside the sandbox) writing to a file. Suggested fix: document this in the charter/AGENTS fleet-cap rule or give the sandbox `--share-pid`/read-only host /proc.
+
+## subagent workflow event-file keeper quirks (observed 2026-10-25)
+- 2026-10-25: a "keeper" child that greps another workflow's `events.jsonl` for a phase string can match the other workflow's own script source (the file embeds the workflowScript text), or give up early; the dependent stage then starts immediately and ignores the keeper result, breaking "quiet machine" ordering. Workaround: match the full emit record, e.g. `grep -c '"value":"phase D done'`, and check the keeper output in the script (`if (!/READY/.test(out)) ...`). Suggested fix: a first-class `runs.waitFor(runKey|event)` primitive in workflowScript, or documenting that events.jsonl embeds the script.
+
+## fetch_content / research-agent tool quirks (observed 2026-10-27)
+- 2026-10-27: research subagents report (a) `fetch_content` with `mode: "answer"` fails with "prompt-capture: no capture for this 286-char system prompt" (also seen by the parent on 2026-10-24), (b) PDF fetches sometimes return ~91 chars, (c) sandboxed bash cannot reach arxiv.org. Workaround used: arXiv abstract/HTML pages with `get_search_content` + `findText`, and marking unread sections [NR]. Suggested fix: make answer mode work under the claude-bridge model route or document it as unsupported; make PDF extraction robust.
