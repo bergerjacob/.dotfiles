@@ -226,3 +226,211 @@
 
 ## fetch_content / research-agent tool quirks (observed 2026-10-27)
 - 2026-10-27: research subagents report (a) `fetch_content` with `mode: "answer"` fails with "prompt-capture: no capture for this 286-char system prompt" (also seen by the parent on 2026-10-24), (b) PDF fetches sometimes return ~91 chars, (c) sandboxed bash cannot reach arxiv.org. Workaround used: arXiv abstract/HTML pages with `get_search_content` + `findText`, and marking unread sections [NR]. Suggested fix: make answer mode work under the claude-bridge model route or document it as unsupported; make PDF extraction robust.
+
+## reliability backlog disposition (audited 2026-10-29)
+
+Historical entries above are preserved; this is the current index. Implementation
+and operating instructions: `pi/README.md`. Installed versions audited: Pi 1.3.0,
+pi-subagents 0.52.0, pi-dcp 0.2.0, pi-sandbox 0.6.5/runtime 0.0.70,
+pi-web-access 0.24.0 and agent-browser 0.27.0.
+
+### Fixed or mitigated in managed configuration
+
+- **Tmux multiline commands, duplicate command echo and hidden exits:** commands
+  now launch directly as non-interactive bash, not terminal-typed interactive zsh;
+  completed panes retain exit status/signal and output. Re-running an exited name
+  replaces it automatically; replacing a live process still requires restart.
+- **Tmux scope/layout/capacity:** worker ownership is tied to Pi's pane ID. Foreign
+  and legacy panes are never adopted/resized/killed; run refuses an incompatible
+  window. Splitting the largest owned tile avoids premature bottom-tile capacity
+  failures. No fallback creates other sessions/windows. Mutations are serialized.
+- **Workflow model routing:** a runtime facade handles actual launch objects,
+  including helpers, spreads, aliases and computed agent names. Explicit child
+  and top-level models are respected individually; task strings/comments cannot
+  change routing. Disabled agents are labelled non-executable in discovery and
+  fail before spawn, including computed names. Project agents remain unpinned.
+- **False-success fanout:** mode-routed `runs.all` rejects when all children fail;
+  explicit catch/recovery remains possible. Mixed batches still need `ok` checks.
+  RPC/custom launchers bypassing modes still need the upstream correction.
+- **Ten-minute retry waits:** default agent retry backoff reduced from twelve
+  attempts/610 seconds to three attempts/2+4+8 seconds. Clean installs default to
+  the current OpenAI Codex model rather than the previously depleted Z.ai route;
+  existing saved modes and explicit GLM mode are preserved. No account recharged.
+- **Run budgets/noisy notifications:** managed subagent config sets a one-hour
+  default leaf deadline and quieter meaningful-attention notifications. Async
+  composites still need explicit task deadlines; unchanged attention must not be
+  blindly re-armed. Schedules/artifacts default outside project worktrees.
+- **Browser socket failures:** `bin/dotfiles-browser` supplies private writable
+  `AGENT_BROWSER_SOCKET_DIR`, unique explicit session scope and bounded CLI calls,
+  without changing XDG globally. It rejects global close/profile attachment and
+  leaves TLS, browser sandbox and network policy intact. Real host about:blank
+  navigation, evaluation, title reading and exact-session close passed.
+- **Secret-mask false positives:** only credential-key values and URLs containing
+  credentials are learned by default; built-in token patterns remain. Public URLs,
+  model IDs, selectors and CSS classes survive. Inline comments/quoted multiline
+  dotenv values, custom key patterns, JSON/details/structured-content redaction
+  and config-sensitive caching are covered. Masking remains output-only; historical
+  command-argument mangling is not proven fixed by this change.
+- **Clipboard:** Pi and standalone Neovim refresh a missing/stale display only when
+  exactly one owned Wayland socket is available; X11/runtime variables are
+  preserved. Embedded and standalone Neovim provider checks pass. This does not
+  retroactively alter already running shells or every standalone application.
+- **Context:** native recent-token retention reduced from 60k to 20k, with exact
+  model overrides targeting approximately 75% of audited context windows. Native
+  compaction already works between tool batches. Metadata-only success/failure
+  telemetry and `/pi-health` added; DCP protection remains enabled.
+- **Operational recovery:** global instructions plus a browser-QA skill now explain
+  sandbox/host boundaries, owned session cleanup, visible React controls, hydration,
+  matching Playwright versions, screenshot verification, acceptance prose, anchored
+  process matching and source-fetch fallbacks. No broad process kills or security
+  bypasses are used as automatic recovery.
+
+### Already fixed, partially stale, or project-specific
+
+- Pi 1.3.0 supports exact per-model compaction overrides, mid-request native
+  compaction and compaction-failure events. Its text print mode now emits provider
+  errors and returns nonzero (verified with a synthetic error, no provider call).
+- pi-subagents now accepts an omitted `noStagedFiles`; explicit null is invalid.
+  The old literal helper example was already handled by the regex, but computed
+  agents/mixed models were not; the facade supersedes that regex.
+- Alt+Shift+G still needs the existing tmux/Alacritty CSI-u workaround; its encoded
+  sequence passes the installed TUI parser. Legacy ESC-uppercase/tmux uppercase
+  encoding remains an upstream parser limitation; the workaround is preserved.
+- Matching Playwright Chromium revision 1234 is now cached locally; compatibility
+  must still be checked against each project's Playwright version.
+- GPU device forwarding exists in `bin/bwrap`; visible NVIDIA devices do not prove
+  Torch CUDA initialization. No driver or application environment changes made.
+- Next shared-cache/HMR/chunk-403, hidden controls, React input and recording-auth
+  reports require reproduction in their original project; generic QA guidance is
+  mitigation, not a claim that those applications were repaired.
+
+### Still open: upstream or environment-specific work
+
+- **DCP 0.2.0:** whole-user-span protection, request-start-only nudges and topic-only
+  replay checkpoints persist. Do not disable protection or keep retrying protected
+  spans. A tested upstream/local-package implementation needs one shared eligibility
+  policy for recent/in-flight batches, automatic pruning and summary replay.
+- **Pi-subagents:** cross-reload workflow cancellation, acceptance-output diagnostics,
+  exact attention-reason deduplication, and all-failed semantics outside the mode
+  adapter still need package lifecycle changes. Z.ai balance errors remain wrongly
+  classified as transient upstream, though local retry delay is now bounded.
+- **Sandbox:** it is currently ENABLED, so old 'dormant/off' notes are stale. PID and
+  network isolation, read-only runtime mounts, active repo-root dotfile masks,
+  approval-state files and non-network command URL scans persist. Do not delete
+  active mask mountpoints or weaken isolation to hide these symptoms.
+- **Browser:** doctor does not reliably test socket writability; cross-namespace
+  daemon lifetime, recording-context authenticated proxy state and positional
+  screenshot parsing need upstream fixes/reproduction. A CLI timeout is not proof
+  that its daemon stopped. Keep commands/cleanup in one authorized environment.
+- **Network/research:** package-index, arXiv and GitHub-log access depend on exact
+  host approvals and functioning host DNS/proxy transport. No global allowlist
+  widening, proxy-secret changes or paid provider fallback was made. GPU compute
+  needs validation in the actual research interpreter outside ambiguous namespaces.
+- **Web answer/PDF:** claude-bridge nested answer requests can lack prompt capture;
+  use readable/raw/HTML retrieval and report unread content. Full PDF extraction
+  robustness and supported bridge answer requests remain upstream integration work.
+
+Validation: 47 tests passed, one opt-in live-clipboard test skipped; real browser
+smoke passed; strict TypeScript checks, shell/JSON syntax, Pi extension loading,
+both profile linker dry-runs and `git diff --check` passed. Existing user edits were preserved; no commits,
+pushes, sudo, provider balance changes or installed-dependency patches performed.
+
+### Post-reload sign-off (2026-10-29)
+
+- [x] Actual discovery lists vision as disabled, not executable, in OpenAI mode.
+- [x] Computed alias/helper workflow launches returned PONG on Luna/low,
+  Sol/medium and Astra/high. All three child `ok` values were true.
+- [x] A deliberately nonexistent-agent fanout produced a FAILED workflow with
+  `All workflow children failed`, without reaching dependent work or calling a
+  model for the nonexistent agent. That failure notification was expected.
+- [x] Real owned tmux panes ran multiline code verbatim, reported exit 7, replaced
+  exited names without restart, refused live replacement and reported signal 2
+  after Ctrl+C. Owned validation panes were cleaned up.
+- [x] Real browser navigation, input, click, screenshot and exact-session close
+  passed. Reproduced the raw CLI's relative/trailing-flag screenshot-path bug;
+  wrapper now canonicalizes flags/paths and verifies a fresh requested output,
+  rejecting both missing output and unchanged stale files. Regression coverage
+  added; raw agent-browser's parser remains upstream work.
+- [x] Full regression suite still passes: 47 passed, one opt-in image test skipped;
+  strict TypeScript, shell/JSON syntax and diff checks passed.
+- [ ] User: `/compact`, then `/pi-health`; confirm real compaction says completed.
+- [ ] User: copy a harmless image and Ctrl+V in Pi (normal/insert prompt modes).
+  Clipboard IPC works but currently advertises only text, not an image.
+- [ ] User: scroll up and Alt+Shift+G; confirm the terminal jumps to the bottom.
+- [ ] Reproduction inputs needed: affected application project/URL and exact
+  research Python/venv path for remaining network, hydration, recording and CUDA
+  reports. No credentials needed. Other providers were not live-probed.
+- [ ] Upstream DCP, sandbox and cross-reload cancellation defects above are still
+  open implementation work, not issues that passing local tests can close.
+
+#### User confirmation and live clipboard follow-up (2026-10-29)
+
+These results supersede the pending image/local-key checks immediately above:
+
+- [x] User pasted a readable image; parent inspected the PNG directly.
+- [x] Opt-in real-Neovim live image clipboard test passed in both insert and
+  normal modes: `PI_TEST_LIVE_CLIPBOARD=1 node --test
+  --test-name-pattern='live image clipboard' pi/tests/nvim-prompt.integration.test.ts`.
+  Test deleted only its own temporary images and left the clipboard unchanged.
+- [x] User confirmed Alt+Shift+G works locally.
+- Remote modified-key failures (including Ctrl+Enter) remain deferred at the
+  user's request. Terminal/tmux extended-key forwarding is a plausible cause,
+  not a confirmed diagnosis or a demonstrated Pi limitation. SSH normally
+  forwards input bytes unchanged. No remote-terminal settings changed.
+- [ ] Still awaiting real-session `/compact`, then `/pi-health`, confirmation.
+
+#### DCP-default policy requested by user (2026-10-29)
+
+- [x] User confirmed native manual compaction works; it is no longer a pending
+  compaction smoke test or the recommended routine context-management workflow.
+- [x] Disabled native automatic full-session compaction in managed settings.
+  Installed Pi guards both threshold and overflow recovery with this flag;
+  regression tests exercise disabled behavior without making provider calls.
+- [x] Kept DCP automatic: dedup/purge enabled, model-directed compression allowed,
+  strong 25%/50% nudges and current-user-turn protection unchanged. Agent guidance
+  now calls for proactive eligible-work compression without manual commands,
+  never silently enabling/calling native compaction as a fallback.
+- `/compact` still exists as Pi's native manual command, not a DCP alias. No
+  installed dependency was patched. `/reload` applies the new default policy.
+- DCP's protected current request can still fill the context window. Pause for
+  a new user turn/fresh session if older eligible context is exhausted; do not
+  disable protection. The existing DCP upstream limitations remain open.
+- Validation: 48 tests passed, one live-image test skipped because the clipboard
+  now contains text; that live test separately passed in both prompt modes
+  earlier. Strict TypeScript, shell/JSON syntax and diff checks passed.
+
+## Rolling DCP disposition (2026-10-30)
+
+- Replaced the upstream extension resource with the repo-owned, pinned 0.2.0
+  AGPL fork under `pi/agent/extensions/dcp/`; npm stays installed for its skill.
+  Earlier whole-user-span/request-start-only/topic-only/cache-replay observations
+  above are historical: rolling token recency, per-request reminders, explicit
+  summary-once context and active-branch replay now address those local defects.
+- Native automatic compaction remains OFF. Rolling recency is roughly 100k
+  estimated tokens, scaled down on small windows, not a total-context cap.
+  Pinned instructions/results, prose, successful arguments and summaries can
+  still grow without bound; stop for a fresh-session handoff if they cannot fit.
+- Validation: 57 tests passed, one opt-in live clipboard test skipped; strict
+  TypeScript, managed JSON, shell syntax and diff whitespace checks passed.
+  The local extension integration smoke makes no model/network requests and
+  checks single registration plus immediate branch-record persistence. No
+  installed node_modules, clipboard, setup/linker files, commits or pushes changed.
+- Final expanded run: 59 passed, one opt-in clipboard test skipped (60 total),
+  including the real Pi loader and suppression of already-compressed candidates.
+
+## pi tmux worker layout quirks (observed 2026-10-30)
+
+- 2026-10-30: `tmux run` for Lexel Translate validation refused with "Pi's window contains unrelated or legacy panes; leave them untouched." Existing panes were left untouched. Workaround: short bounded shell validation and browser QA of local component fixtures (no temporary server needed). Suggested fix: expose actionable owned-pane capacity/layout diagnostics without adopting or manipulating unrelated panes.
+
+## browser readiness QA isolation quirks (observed 2026-10-30)
+
+- 2026-10-30: Owned dotfiles-browser sessions load a page within one bash call but the daemon/context vanishes at the next call (about:blank, unknown refs). Existing host panes are unmanaged and were left untouched. Playwright fallback discovery found the installed package expects chromium-1248, which is not cached. Workaround: complete bounded independent browser journeys within a single CLI/process call and close before exit; do not reuse refs across calls or claim unavailable signed-in/live-dev coverage. Suggested fix: provide a supported persistent sandbox browser transport and matching preinstalled Playwright browser.
+
+## browser QA quirks (observed 2026-10-30)
+- Production QA: dotfiles-browser page/session state vanished between sandbox shell calls; bounded same-call journeys preserved state, but route installation success did not establish interception (abort route followed by HTTP 200). Installed project Playwright expected uncached Chromium 1248 while cache contained 1234. Suggested fix: validate persistent sandbox browser lifecycle and route behavior, and align Playwright/cache versions before safe translation QA. No harness modifications made.
+
+## browser QA quirks (observed 2026-10-30)
+- Owned dotfiles-browser session qa-ready-mobile-1030 reset to about:blank across bash tool calls; snapshots worked within a single call. Doctor reported no active daemons. Supervisor-approved workaround: self-contained <=30s journeys with open/actions/screenshots/close. Installed Playwright expects chromium-1248 but only chromium-1234 is cached, so it was not substituted. Suggested fix: provide a persistent sandbox runner or install the matching browser through normal harness maintenance.
+
+## browser QA quirks (observed 2026-10-30)
+- 2026-10-30: dotfiles-browser owned daemon disappeared between bash invocations during production QA; self-contained bounded journeys partly worked but input/navigation state was inconsistent. Matching Playwright Chromium1248 absent. Investigate runner lifecycle and state continuity; no host workaround or browser substitution used.
