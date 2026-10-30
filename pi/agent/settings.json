@@ -11,7 +11,7 @@
   ],
   "hideThinkingBlock": false,
   "compaction": {
-    "enabled": true,
+    "enabled": false,
     "reserveTokens": 32768,
     "keepRecentTokens": 60000
   },
@@ -36,7 +36,10 @@
     "npm:pi-web-access",
     "npm:@latentminds/pi-quotas",
     "npm:pi-btw",
-    "npm:@davecodes/pi-dcp",
+    {
+      "source": "npm:@davecodes/pi-dcp@0.2.0",
+      "extensions": []
+    },
     "npm:pi-sandbox",
     {
       "source": "git:github.com/cgxeiji/pi-emote",

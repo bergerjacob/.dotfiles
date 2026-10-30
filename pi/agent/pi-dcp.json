@@ -9,9 +9,15 @@
     "enabled": false,
     "automaticStrategies": true
   },
+  "rollingProtection": {
+    "recentTokens": 100000,
+    "maxWindowFraction": 0.4,
+    "reserveTokens": 16384,
+    "imageTokens": 4096
+  },
   "turnProtection": {
-    "enabled": true,
-    "turns": 1
+    "enabled": false,
+    "turns": 0
   },
   "compress": {
     "mode": "range",
