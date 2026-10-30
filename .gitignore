@@ -1,2 +1,10 @@
 nvim/lazy-lock.json
 node_modules/
+
+# OpenCode machine-local daemon credentials
+opencode/service.json
+
+# Local configuration backups
+*.bak
+*.bak-*
+*.openai-backup

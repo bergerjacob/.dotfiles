@@ -12,7 +12,8 @@
       "api.elevenlabs.io",
       "github.com",
       "*.github.com",
-      "example.com"
+      "example.com",
+      "deb.debian.org"
     ],
     "deniedDomains": []
   },
