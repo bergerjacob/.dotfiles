@@ -1,4 +1,38 @@
-# Neovim prompt regression checks
+# Pi regression checks
+
+Run all checks with Node 24 and the installed Pi/packages:
+
+```sh
+node --test pi/tests/*.test.ts
+```
+
+Reliability tests cover exact multiline tmux execution, exit codes, ownership,
+layout, concurrent launches, runtime workflow model routing/disabled agents,
+all-failed fanout, secret-redaction false positives, structured results, private
+browser sockets/deadlines, Wayland environment repair and compaction telemetry.
+Workflow tests use the installed pi-subagents 0.52.0 validator/VM with fake
+launches: no model requests. Tmux tests use a disposable private server, clean it
+up in finally, and never touch the user's real sessions. Browser wrapper tests
+use a fake CLI, not personal profiles or a real daemon. An installed-Pi print-mode
+regression uses a synthetic provider error and makes no network call.
+
+With TypeScript (`tsc`) on PATH, also run `node pi/tests/typecheck.mjs` for a
+strict check of the changed reliability extensions against installed Pi types.
+It creates only a temporary config and never installs or patches dependencies.
+
+See `../README.md` for operational defaults and unresolved upstream issues.
+
+`dcp.test.ts` covers a huge single-user loop, small-model scaling, crossing
+parallel/pending batches, huge results, image/thinking/argument accounting,
+shared range/message/sweep/replay eligibility and atomic refusal, >64 request
+nudges, repeat fresh-original purge with stable stats, frozen inputs/provider
+pairing, summary-once projection, branch/restart/fork/suspension replay and legacy
+migration. Its integration smoke loads the local extension with Pi's jiti and
+host typebox mapping, checks single registration, runs hooks/tool persistence and
+commands without model/network calls. Strict typecheck includes the entry/core
+and their vendored imports. Normal tests do not touch the clipboard.
+
+## Neovim prompt checks
 
 ```sh
 node --test pi/tests/nvim-prompt*.test.ts

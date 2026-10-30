@@ -1,0 +1,13 @@
+{
+  "timeoutMs": 3600000,
+  "toolDescriptionMode": "compact",
+  "artifactDir": "session",
+  "scheduledRuns": {
+    "storeRoot": "~/.local/share/pi-subagents/schedules"
+  },
+  "control": {
+    "needsAttentionAfterMs": 180000,
+    "activeNoticeAfterMs": 600000,
+    "notifyOn": ["needs_attention"]
+  }
+}

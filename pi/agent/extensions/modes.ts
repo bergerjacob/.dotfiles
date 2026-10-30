@@ -62,12 +62,10 @@
 //   fallback — and /mode off resets to that default. Switching without
 //   credentials falls back through the other presets so a mode stays
 //   active whenever any model is usable.
-// - workflowScript calls: children spawned by runs.run()/runs.all() take their
-//   model from agent frontmatter, ignoring the mode. The tool-call hook rewrites
-//   literal `agent: "x"` items to carry the mode's per-child `model`, and sets a
-//   top-level default `model` (the standard pick) as a safety net. A script that
-//   already contains `model:` is left alone. A short system-prompt note still
-//   asks the parent to pass explicit models, which also covers dynamic agents.
+// - workflowScript calls receive a plain-JavaScript runs facade that routes
+//   actual launch objects (including helpers, spreads and computed agents).
+//   Explicit child/top-level model choices win; disabled agents fail before
+//   spawn. Discovery output labels disabled agents as non-executable.
 //
 // Edit MODES below to tune models or add presets.
 
@@ -80,6 +78,7 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { readFile, writeFile } from "node:fs/promises";
+import { routeWorkflow, filterAgentList } from "./mode-routing/workflow.ts";
 
 interface Pick {
   model: string;
@@ -259,53 +258,8 @@ function formatPick(pick: Pick): string {
   return pick.thinking ? `${pick.model}:${pick.thinking}` : pick.model;
 }
 
-// Matches a literal `agent: "name"` property inside an object literal in a
-// workflowScript. The leading `{` or `,` keeps prose such as "(agent: 'fast')"
-// inside task strings from being rewritten.
-const WORKFLOW_AGENT_LITERAL = /([{,]\s*)(["']?agent["']?\s*:\s*)(["'])([A-Za-z0-9_-]+)\3/g;
-
-/** Routes workflowScript children through the active mode. Children launched
- *  by runs.run()/runs.all() take their model from agent frontmatter and ignore
- *  the mode, so a mode on another provider would still hit the frontmatter
- *  provider (e.g. a 429 retried for ~10 minutes). Two layers:
- *  - literal `agent: "x"` items get a per-child `model` after the agent;
- *  - a top-level default `model` (the standard pick) covers anything the
- *    rewrite cannot see (agent held in a variable, helper functions).
- *  A script that already mentions `model:` is the parent's explicit choice and
- *  is left untouched, as is an explicit top-level `model`. */
-function injectWorkflow(
-  mode: Mode,
-  input: Record<string, unknown> & { workflowScript: string },
-): { block: true; reason: string } | undefined {
-  let blocked: string | undefined;
-  for (const match of input.workflowScript.matchAll(WORKFLOW_AGENT_LITERAL)) {
-    const raw = match[4]!.toLowerCase();
-    const canonical = AGENT_ALIASES[raw] ?? raw;
-    if (canonical !== "main" && mode.agents[canonical] === null) {
-      blocked = canonical;
-      break;
-    }
-  }
-  if (blocked !== undefined) {
-    return { block: true, reason: `agent "${blocked}" is disabled in mode "${activeMode}"` };
-  }
-
-  if (!/\bmodel["']?\s*:/.test(input.workflowScript)) {
-    input.workflowScript = input.workflowScript.replace(
-      WORKFLOW_AGENT_LITERAL,
-      (whole, lead: string, key: string, quote: string, name: string) => {
-        const pick = pickFor(mode, name);
-        if (!pick) return whole;
-        return `${lead}${key}${quote}${name}${quote}, model: ${JSON.stringify(formatPick(pick))}`;
-      },
-    );
-  }
-
-  if (!input.model) {
-    const fallback = mode.agents.standard ?? mode.primary;
-    if (fallback) input.model = formatPick(fallback);
-  }
-  return undefined;
+function injectWorkflow(mode: Mode, input: Record<string, unknown> & { workflowScript: string }): void {
+  input.workflowScript = routeWorkflow(input.workflowScript, mode, AGENT_ALIASES, activeMode!, input.model);
 }
 
 function modeSummary(name: string, mode: Mode): string {
@@ -964,8 +918,15 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  // Nudge the parent to carry explicit models into workflowScript children,
-  // which the tool-call hook cannot reach.
+  pi.on("tool_result", async (event) => {
+    if (event.toolName !== "subagent" || event.input?.action !== "list" || !activeMode) return;
+    const mode = await getMode(activeMode);
+    if (!mode) return;
+    const content = event.content.map((part) => part.type === "text"
+      ? { ...part, text: filterAgentList(part.text, mode, AGENT_ALIASES, activeMode!) } : part);
+    return { content };
+  });
+
   pi.on("before_agent_start", async (event, ctx) => {
     const mode = activeMode ? await getMode(activeMode) : undefined;
     if (!mode || process.env.PI_SUBAGENT_CHILD === "1") return;
@@ -986,7 +947,7 @@ export default function (pi: ExtensionAPI) {
     return {
       systemPrompt: `${event.systemPrompt}\n\nActive model mode: ${activeMode} (primary ${formatPick(
         mode.primary,
-      )}). Subagent launches, including literal agent children in workflowScript, get these models injected automatically (${agents}); pass an explicit model only to override a tier.${visionNote}`,
+      )}). Subagent launches, including dynamic workflowScript children, get these models injected automatically (${agents}); pass an explicit model only to override a tier.${visionNote}`,
     };
   });
 

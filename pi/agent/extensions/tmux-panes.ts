@@ -1,436 +1,195 @@
-/**
- * tmux extension — gives the agent named panes for long-running processes.
- *
- * Local fork of @ogulcancelik/pi-tmux with a strict, self-healing layout:
- *   - Every tmux call is scoped to the pane Pi runs in ($TMUX_PANE, a globally
- *     unique id), so worker panes can never land in another session or window.
- *   - Pi keeps the full-height left half. Workers live in a right-hand column
- *     of equal-height tiles (1, 1/2, 1/3, ...), rebalanced after every run
- *     and stop.
- *
- * Actions:
- *   run   — create a named pane in the right column and run a command in it
- *   read  — capture output from a named pane
- *   send  — send keys to a named pane (C-c, Enter, q, etc.)
- *   stop  — kill a named pane
- *   list  — list all managed panes
- *
- * Panes are tagged with @pi_name tmux user options for discovery.
- * The tool is disabled when not running inside tmux, or when pi is running inside herdr.
- */
-
+/** Named processes beside Pi: owned panes, exact commands, retained exit status. */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { truncateTail, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES } from "@earendil-works/pi-coding-agent";
-import { StringEnum } from "@earendil-works/pi-ai";
+import { StringEnum, Type } from "@earendil-works/pi-ai";
 import { Text } from "@earendil-works/pi-tui";
-import { Type } from "@sinclair/typebox";
 
 interface PaneInfo {
 	name: string;
 	paneId: string;
+	owner: string;
 	alive: boolean;
 	command: string;
 	pid: string;
 	left: number;
 	top: number;
 	height: number;
+	exitCode: string;
+	exitSignal: string;
 }
 
-// Strip ANSI escapes, OSC sequences, and tmux/wezterm wrapping
 function stripAnsi(text: string): string {
-	return (
-		text
-			// OSC sequences (e.g. \x1b]...\x07 or \x1b]...\x1b\\)
-			.replace(/\x1b\].*?(?:\x07|\x1b\\)/g, "")
-			// tmux passthrough (\x1bPtmux;...\x1b\\)
-			.replace(/\x1bPtmux;.*?\x1b\\/g, "")
-			// CSI sequences (\x1b[...letter)
-			.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")
-			// Remaining bare escapes
-			.replace(/\x1b[^[\]P]/g, "")
-			// Carriage returns (terminal rewrite lines)
-			.replace(/\r/g, "")
-	);
+	return text.replace(/\x1b\].*?(?:\x07|\x1b\\)/g, "")
+		.replace(/\x1bPtmux;.*?\x1b\\/g, "")
+		.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")
+		.replace(/\x1b[^[\]P]/g, "").replace(/\r/g, "");
 }
 
-const PANE_FORMAT =
-	"#{pane_id}\t#{@pi_name}\t#{pane_current_command}\t#{pane_pid}\t#{pane_dead}\t#{pane_left}\t#{pane_top}\t#{pane_height}";
+function quote(text: string): string {
+	return "'" + text.replace(/'/g, "'\\''") + "'";
+}
+
+function status(pane: PaneInfo): string {
+	return pane.alive ? `running (${pane.command})` : pane.exitSignal
+		? `exited (signal ${pane.exitSignal})` : `exited (code ${pane.exitCode || "unknown"})`;
+}
+
+const PANE_FORMAT = "#{pane_id}\t#{@pi_name}\t#{@pi_owner}\t#{pane_current_command}\t#{pane_pid}\t#{pane_dead}\t#{pane_left}\t#{pane_top}\t#{pane_height}\t#{pane_dead_status}\t#{pane_dead_signal}";
 
 export default function (pi: ExtensionAPI) {
-	const inTmux = !!process.env.TMUX;
-	const inHerdr = !!process.env.HERDR_ENV;
 	const myPaneId = process.env.TMUX_PANE || "";
-	if (!inTmux || inHerdr || !myPaneId) {
-		return;
-	}
-
-	// --- helpers ---
+	if (!process.env.TMUX || process.env.HERDR_ENV || !myPaneId) return;
 
 	async function tmux(args: string[]) {
-		return pi.exec("tmux", args);
+		return pi.exec("tmux", args, { timeout: 5000 });
 	}
-
-	/**
-	 * Resolve Pi's own pane fresh on every call. Pane ids are unique across the
-	 * whole tmux server, so targeting by id cannot leak into another session or
-	 * window, and the window id follows Pi if its pane is ever moved.
-	 */
-	async function locateSelf(): Promise<{ windowId: string; left: number; width: number; windowWidth: number; zoomed: boolean }> {
-		const result = await tmux([
-			"display-message",
-			"-p",
-			"-t",
-			myPaneId,
-			"#{pane_id}\t#{window_id}\t#{pane_left}\t#{pane_width}\t#{window_width}\t#{window_zoomed_flag}",
-		]);
+	async function checked(args: string[]) {
+		const result = await tmux(args);
+		if (result.code !== 0) throw new Error(`tmux ${args[0]} failed: ${result.stderr.trim()}`);
+		return result;
+	}
+	async function locateSelf() {
+		const result = await checked(["display-message", "-p", "-t", myPaneId,
+			"#{pane_id}\t#{window_id}\t#{pane_left}\t#{pane_width}\t#{window_width}\t#{window_zoomed_flag}"]);
 		const [paneId, windowId, left, width, windowWidth, zoomed] = result.stdout.trim().split("\t");
-		if (result.code !== 0 || paneId !== myPaneId || !windowId) {
-			throw new Error(`Could not locate pi's tmux pane ${myPaneId}.`);
-		}
+		if (paneId !== myPaneId || !windowId) throw new Error(`Could not locate Pi's tmux pane ${myPaneId}.`);
 		return { windowId, left: Number(left), width: Number(width), windowWidth: Number(windowWidth), zoomed: zoomed === "1" };
 	}
-
-	/** Every pane in Pi's window except Pi itself, ordered top to bottom. */
 	async function listWindowPanes(windowId: string): Promise<PaneInfo[]> {
-		const result = await tmux(["list-panes", "-t", windowId, "-F", PANE_FORMAT]);
-		if (result.code !== 0) return [];
-
-		const panes: PaneInfo[] = [];
-		for (const line of result.stdout.trim().split("\n")) {
-			if (!line.trim()) continue;
-			const [paneId, paneName, command, pid, dead, left, top, height] = line.split("\t");
-			if (paneId === myPaneId) continue;
-			panes.push({
-				name: paneName?.trim() || "",
-				paneId,
-				alive: dead !== "1",
-				command,
-				pid,
-				left: Number(left),
-				top: Number(top),
-				height: Number(height),
-			});
-		}
-		return panes.sort((a, b) => a.top - b.top);
+		const result = await checked(["list-panes", "-t", windowId, "-F", PANE_FORMAT]);
+		return result.stdout.split("\n").filter(Boolean).map((line) => {
+			const [paneId, name, owner, command, pid, dead, left, top, height, exitCode, exitSignal] = line.split("\t");
+			return { paneId, name, owner, command, pid, alive: dead !== "1", left: Number(left),
+				top: Number(top), height: Number(height), exitCode, exitSignal };
+		}).filter((p) => p.paneId !== myPaneId).sort((a, b) => a.top - b.top);
 	}
-
-	/** Workers sit strictly to the right of Pi's column. */
-	function rightColumn(panes: PaneInfo[], self: { left: number; width: number }): PaneInfo[] {
-		return panes.filter((p) => p.left > self.left + self.width - 1);
-	}
-
-	async function findPane(name: string): Promise<PaneInfo | null> {
+	const owned = (p: PaneInfo) => p.owner === myPaneId && Boolean(p.name);
+	async function findPane(name: string) {
 		const self = await locateSelf();
-		const panes = await listWindowPanes(self.windowId);
-		return panes.find((p) => p.name === name) ?? null;
+		return (await listWindowPanes(self.windowId)).find((p) => owned(p) && p.name === name);
 	}
-
-	/** Pi owns the left half; the right column is split into equal-height tiles. */
-	async function rebalance(): Promise<void> {
+	async function rebalance() {
 		const self = await locateSelf();
 		if (self.zoomed) return;
-		const column = rightColumn(await listWindowPanes(self.windowId), self);
-		if (column.length === 0) return;
-
-		await tmux(["resize-pane", "-t", myPaneId, "-x", String(Math.floor((self.windowWidth - 1) / 2))]);
-
+		const panes = await listWindowPanes(self.windowId);
+		// Never resize an unrelated pane, even if it happens to sit on the right.
+		if (panes.some((p) => !owned(p))) return;
+		const column = panes.filter((p) => p.left > self.left);
+		if (!column.length) return;
+		await checked(["resize-pane", "-t", myPaneId, "-x", String(Math.floor((self.windowWidth - 1) / 2))]);
 		if (column.length < 2) return;
-		const total = column.reduce((sum, p) => sum + p.height, 0) + (column.length - 1);
-		const each = Math.floor((total - (column.length - 1)) / column.length);
-		// Resize top-down; the last tile absorbs the remainder.
-		for (const pane of column.slice(0, -1)) {
-			await tmux(["resize-pane", "-t", pane.paneId, "-y", String(each)]);
-		}
+		const each = Math.floor(column.reduce((sum, p) => sum + p.height, 0) / column.length);
+		for (const pane of column.slice(0, -1)) await checked(["resize-pane", "-t", pane.paneId, "-y", String(each)]);
+	}
+	async function capturePane(paneId: string, lines: number) {
+		const result = await checked(["capture-pane", "-t", paneId, "-p", "-S", `-${lines}`]);
+		return stripAnsi(result.stdout).replace(/\n+$/, "\n");
 	}
 
-	async function capturePane(paneId: string, lines: number): Promise<string> {
-		const result = await tmux(["capture-pane", "-t", paneId, "-p", "-S", `-${lines}`]);
-		if (result.code !== 0) throw new Error(`capture-pane failed: ${result.stderr}`);
-
-		let output = stripAnsi(result.stdout);
-		// Trim trailing blank lines (tmux pads to pane height)
-		output = output.replace(/\n+$/, "\n");
-		return output;
+	// Pi can execute sibling calls concurrently. Serialize pane mutations so two
+	// launches cannot both pass the same name check or split an obsolete tile.
+	let queue: Promise<unknown> = Promise.resolve();
+	async function serialize<T>(fn: () => Promise<T>): Promise<T> {
+		const next = queue.then(fn, fn);
+		queue = next.catch(() => {});
+		return next;
 	}
-
-	// --- tool ---
 
 	pi.registerTool({
-		name: "tmux",
-		label: "tmux",
-		description:
-			"Manage tmux panes for long-running processes (dev servers, watchers, etc). " +
-			"Actions: run (start command in named pane), read (capture output), send (send keys like C-c), stop (kill pane), list (show panes).",
+		name: "tmux", label: "tmux",
+		description: "Manage named process panes beside Pi. Actions: run, read (output and exit status), send, stop, list. Commands run exactly as supplied in non-interactive bash, including multiline scripts; completed panes remain readable and are replaced on the next run of that name.",
 		promptGuidelines: [
-			"Use `tmux` run for long-running processes (dev servers, watchers, builds) instead of `bash`.",
-			"Use `bash` only for short-lived commands that complete quickly.",
-			"Layout is fixed: pi keeps the full-height left half of its own window. Worker panes are always created in pi's own tmux session and window, stacked in equal-height tiles on the right half.",
+			"Use `tmux` run for long-running processes instead of `bash`; use `bash` for short commands.",
+			"Pi keeps the full-height left half of its own window; owned workers tile on the right. Never create other sessions/windows or manipulate unrelated panes to bypass capacity errors.",
+			"Read/list report process exit status. Stop completed panes when no longer needed. Use restart:true only when intentionally replacing a running process.",
 		],
 		parameters: Type.Object({
-			action: StringEnum(["run", "read", "send", "stop", "list"] as const, {
-				description: "Action to perform",
-			}),
-			pane: Type.Optional(Type.String({ description: "Pane name (required for run/read/send/stop)" })),
-			command: Type.Optional(Type.String({ description: "Shell command to run (for run action)" })),
-			keys: Type.Optional(
-				Type.String({
-					description: "Keys to send, space-separated (for send action). Examples: C-c, Enter, q, y",
-				}),
-			),
-			text: Type.Optional(
-				Type.String({
-					description: "Literal text to type into the pane (for send action). Sent as-is, no key lookup.",
-				}),
-			),
-			lines: Type.Optional(
-				Type.Number({ description: "Scrollback lines to capture (for read action, default: 20)" }),
-			),
-			restart: Type.Optional(
-				Type.Boolean({ description: "Kill existing pane before starting (for run action, default: false)" }),
-			),
-			cwd: Type.Optional(Type.String({ description: "Working directory (for run action)" })),
+			action: StringEnum(["run", "read", "send", "stop", "list"] as const),
+			pane: Type.Optional(Type.String({ description: "Name required for run/read/send/stop" })),
+			command: Type.Optional(Type.String({ description: "Exact bash command/script for run; multiline supported" })),
+			keys: Type.Optional(Type.String({ description: "Special keys for send, e.g. C-c or Enter" })),
+			text: Type.Optional(Type.String({ description: "Literal input for send (not an executed shell script)" })),
+			lines: Type.Optional(Type.Integer({ minimum: 1, maximum: 10000, description: "Scrollback lines, default 20" })),
+			restart: Type.Optional(Type.Boolean({ description: "Replace a running owned pane; exited panes are replaced automatically" })),
+			cwd: Type.Optional(Type.String({ description: "Working directory; defaults to current project" })),
 		}),
-
-		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const { action } = params;
-
-			switch (action) {
-				case "run": {
-					const { pane, command, restart, cwd } = params;
-					if (!pane) throw new Error("'pane' is required for run");
-					if (!command) throw new Error("'command' is required for run");
-
-					const existing = await findPane(pane);
-
-					// Dead pane → always replace. Alive pane → error unless restart.
-					if (existing?.alive && !restart) {
-						throw new Error(
-							`Pane '${pane}' already exists (running ${existing.command}). Use restart: true to replace it.`,
-						);
-					}
-					if (existing) {
-						await tmux(["kill-pane", "-t", existing.paneId]);
-					}
-
-					// Splitting a zoomed window would otherwise reshuffle the layout.
+		async execute(_id, params, signal, _update, ctx) {
+			return serialize(async () => {
+				if (signal?.aborted) throw new Error("tmux action cancelled");
+				const { action, pane } = params;
+				if (action !== "list" && (!pane || !/^[\w.-]{1,80}$/.test(pane))) {
+					throw new Error("A pane name of 1–80 letters, digits, underscores, dots or hyphens is required.");
+				}
+				if (action === "run") {
+					const { command, restart, cwd } = params;
+					if (!command || command.includes("\0")) throw new Error("A nonempty command without NUL bytes is required.");
 					let self = await locateSelf();
+					const all = await listWindowPanes(self.windowId);
+					if (all.some((p) => !owned(p))) throw new Error("Pi's window contains unrelated or legacy panes; leave them untouched. Move/close them yourself before starting workers.");
+					const existing = all.find((p) => p.name === pane);
+					if (existing?.alive && !restart) throw new Error(`Pane '${pane}' is still ${status(existing)}. Use restart:true to replace it.`);
+					if (existing) await checked(["kill-pane", "-t", existing.paneId]);
 					if (self.zoomed) {
-						await tmux(["resize-pane", "-Z", "-t", myPaneId]);
+						await checked(["resize-pane", "-Z", "-t", myPaneId]);
 						self = await locateSelf();
 					}
-
-					// First worker: a full-height split to the right of everything, so
-					// pi's column stays intact. Later workers: split the bottom tile.
-					const column = rightColumn(await listWindowPanes(self.windowId), self);
-					const splitArgs = ["split-window", "-d", "-P", "-F", "#{pane_id}"];
-					if (column.length === 0) {
-						splitArgs.push("-f", "-h", "-l", "50%", "-t", myPaneId);
-					} else {
-						splitArgs.push("-v", "-t", column[column.length - 1].paneId);
-					}
-					if (cwd) splitArgs.push("-c", cwd);
-
-					const result = await tmux(splitArgs);
-					if (result.code !== 0) throw new Error(`split-window failed: ${result.stderr}`);
-
+					const column = (await listWindowPanes(self.windowId)).filter(owned);
+					// Split the largest tile, not the smallest bottom tile: use all
+					// available height before reporting genuine capacity exhaustion.
+					const largest = column.reduce<PaneInfo | undefined>((best, p) => !best || p.height > best.height ? p : best, undefined);
+					const args = ["split-window", "-d", "-P", "-F", "#{pane_id}"];
+					if (!largest) args.push("-f", "-h", "-l", "50%", "-t", myPaneId);
+					else args.push("-v", "-t", largest.paneId);
+					args.push("-c", cwd || ctx.cwd);
+					// No terminal typing, interactive startup, history expansion, or
+					// command echo. Set remain-on-exit in the child before exec so
+					// even an instant exit keeps its real status and output.
+					const launch = 'tmux set-option -p -t "$TMUX_PANE" remain-on-exit on && exec /bin/bash -c ' + quote(command);
+					args.push("/bin/bash -c " + quote(launch));
+					const result = await tmux(args);
+					if (result.code !== 0) throw new Error(`Cannot create worker: ${result.stderr.trim()}. Stop an unused owned pane or enlarge the window; do not open another session/window.`);
 					const newPaneId = result.stdout.trim();
-
-					// Tag with name
-					await tmux(["set-option", "-p", "-t", newPaneId, "@pi_name", pane]);
-					await rebalance();
-
-					// Send command (literal text + Enter)
-					await tmux(["send-keys", "-l", "-t", newPaneId, command]);
-					await tmux(["send-keys", "-t", newPaneId, "Enter"]);
-
-					// Wait briefly and capture initial output
-					await new Promise((r) => setTimeout(r, 1500));
-					const initialOutput = await capturePane(newPaneId, 20);
-
-					return {
-						content: [
-							{
-								type: "text",
-								text: `Started '${command}' in pane '${pane}' (${newPaneId})\n\n${initialOutput}`,
-							},
-						],
-						details: { action: "run", pane, paneId: newPaneId, command },
-					};
-				}
-
-				case "read": {
-					const { pane, lines } = params;
-					if (!pane) throw new Error("'pane' is required for read");
-
-					const existing = await findPane(pane);
-					if (!existing) throw new Error(`Pane '${pane}' not found. Use action 'list' to see managed panes.`);
-
-					const output = await capturePane(existing.paneId, lines ?? 20);
-
-					const truncation = truncateTail(output, {
-						maxLines: DEFAULT_MAX_LINES,
-						maxBytes: DEFAULT_MAX_BYTES,
-					});
-
-					let text = truncation.content;
-					if (truncation.truncated) {
-						text = `[Showing last ${truncation.outputLines} of ${truncation.totalLines} lines]\n${text}`;
+					try {
+						await checked(["set-option", "-p", "-t", newPaneId, "@pi_name", pane!]);
+						await checked(["set-option", "-p", "-t", newPaneId, "@pi_owner", myPaneId]);
+						await rebalance();
+					} catch (error) {
+						await tmux(["kill-pane", "-t", newPaneId]);
+						throw error;
 					}
-
-					return {
-						content: [{ type: "text", text }],
-						details: { action: "read", pane, alive: existing.alive, command: existing.command },
-					};
+					return { content: [{ type: "text", text: `Started '${pane}' (${newPaneId}). Use read for output and exit status.` }],
+						details: { action, pane, paneId: newPaneId } };
 				}
-
-				case "send": {
-					const { pane, keys, text } = params;
-					if (!pane) throw new Error("'pane' is required for send");
-					if (!keys && !text) throw new Error("'keys' or 'text' is required for send");
-
-					const existing = await findPane(pane);
-					if (!existing) throw new Error(`Pane '${pane}' not found.`);
-
-					// Send literal text first (if provided)
-					if (text) {
-						await tmux(["send-keys", "-l", "-t", existing.paneId, text]);
-					}
-
-					// Then send special keys (if provided)
-					if (keys) {
-						const keyArgs = keys.split(/\s+/).filter(Boolean);
-						await tmux(["send-keys", "-t", existing.paneId, ...keyArgs]);
-					}
-
-					const desc = [text && `"${text}"`, keys].filter(Boolean).join(" + ");
-					return {
-						content: [{ type: "text", text: `Sent ${desc} to pane '${pane}'` }],
-						details: { action: "send", pane, keys, text },
-					};
-				}
-
-				case "stop": {
-					const { pane } = params;
-					if (!pane) throw new Error("'pane' is required for stop");
-
-					const existing = await findPane(pane);
-					if (!existing) throw new Error(`Pane '${pane}' not found.`);
-
-					await tmux(["kill-pane", "-t", existing.paneId]);
-					await rebalance();
-
-					return {
-						content: [{ type: "text", text: `Stopped pane '${pane}'` }],
-						details: { action: "stop", pane },
-					};
-				}
-
-				case "list": {
+				if (action === "list") {
 					const self = await locateSelf();
 					const panes = await listWindowPanes(self.windowId);
-
-					if (panes.length === 0) {
-						return {
-							content: [{ type: "text", text: "No panes (besides pi)." }],
-							details: { action: "list", panes: [] },
-						};
-					}
-
-					const text = panes
-						.map((p) => {
-							const label = p.name || `[${p.command}]`;
-							const managed = p.name ? "" : " (unmanaged)";
-							return `${label}: ${p.alive ? "running" : "dead"} (${p.command}) [${p.paneId}]${managed}`;
-						})
-						.join("\n");
-
-					return {
-						content: [{ type: "text", text }],
-						details: { action: "list", panes },
-					};
+					return { content: [{ type: "text", text: panes.map((p) => `${p.name || p.paneId}: ${status(p)} [${p.paneId}]${owned(p) ? "" : " (unmanaged; read-only)"}`).join("\n") || "No worker panes." }], details: { action, panes } };
 				}
-
-				default:
-					throw new Error(`Unknown action: ${action}`);
-			}
+				const existing = await findPane(pane!);
+				if (!existing) throw new Error(`Owned pane '${pane}' not found. Use list to inspect panes.`);
+				if (action === "read") {
+					const truncation = truncateTail(await capturePane(existing.paneId, params.lines ?? 20), { maxLines: DEFAULT_MAX_LINES, maxBytes: DEFAULT_MAX_BYTES });
+					return { content: [{ type: "text", text: `${pane}: ${status(existing)}\n${truncation.truncated ? "[Output truncated]\n" : ""}${truncation.content}` }],
+						details: { action, pane, alive: existing.alive, exitCode: existing.exitCode, exitSignal: existing.exitSignal } };
+				}
+				if (action === "send") {
+					if (!existing.alive) throw new Error(`Pane '${pane}' has ${status(existing)}; use run to replace it.`);
+					if (!params.keys && !params.text) throw new Error("keys or text is required for send");
+					if (params.text) await checked(["send-keys", "-l", "-t", existing.paneId, "--", params.text]);
+					if (params.keys) await checked(["send-keys", "-t", existing.paneId, "--", ...params.keys.split(/\s+/).filter(Boolean)]);
+					return { content: [{ type: "text", text: `Sent input to '${pane}'.` }], details: { action, pane } };
+				}
+				await checked(["kill-pane", "-t", existing.paneId]);
+				await rebalance();
+				return { content: [{ type: "text", text: `Stopped '${pane}'.` }], details: { action, pane } };
+			});
 		},
-
-		// --- rendering ---
-
 		renderCall(args, theme) {
-			const action = args.action || "?";
-			let text = theme.fg("toolTitle", theme.bold("tmux "));
-			text += theme.fg("accent", action);
-
-			if (args.pane) text += theme.fg("muted", ` ${args.pane}`);
-			if (args.command) text += theme.fg("dim", ` › ${args.command}`);
-			if (args.text) text += theme.fg("dim", ` › "${args.text}"`);
-			if (args.keys) text += theme.fg("dim", ` › ${args.keys}`);
-
-			return new Text(text, 0, 0);
+			return new Text(theme.fg("toolTitle", theme.bold("tmux ")) + theme.fg("accent", `${args.action || "?"} ${args.pane || ""}`), 0, 0);
 		},
-
 		renderResult(result, { expanded }, theme) {
-			const details = result.details as Record<string, any> | undefined;
-			if (!details) {
-				const c = result.content?.[0];
-				return new Text(c?.type === "text" ? c.text : "", 0, 0);
-			}
-
-			switch (details.action) {
-				case "run": {
-					let t = theme.fg("success", `▶ ${details.pane}`);
-					t += theme.fg("dim", ` › ${details.command}`);
-					return new Text(t, 0, 0);
-				}
-
-				case "read": {
-					const dot = details.alive ? theme.fg("success", "●") : theme.fg("error", "●");
-					let t = `${dot} ${theme.fg("accent", details.pane)}`;
-
-					if (expanded) {
-						const c = result.content?.[0];
-						if (c?.type === "text") {
-							const outputLines = c.text.split("\n").slice(0, 40);
-							t += "\n" + outputLines.map((l: string) => theme.fg("dim", l)).join("\n");
-							const total = c.text.split("\n").length;
-							if (total > 40) {
-								t += `\n${theme.fg("muted", `... (${total} total lines)`)}`;
-							}
-						}
-					}
-					return new Text(t, 0, 0);
-				}
-
-				case "send": {
-					const desc = [details.text && `"${details.text}"`, details.keys].filter(Boolean).join(" + ");
-					return new Text(theme.fg("accent", `⏎ ${details.pane} › ${desc}`), 0, 0);
-				}
-
-				case "stop": {
-					return new Text(theme.fg("warning", `■ ${details.pane}`), 0, 0);
-				}
-
-				case "list": {
-					const panes = details.panes as PaneInfo[];
-					if (!panes?.length) return new Text(theme.fg("dim", "no panes"), 0, 0);
-
-					const lines = panes.map((p) => {
-						const dot = p.alive ? theme.fg("success", "●") : theme.fg("error", "●");
-						const label = p.name
-							? theme.fg("accent", p.name)
-							: theme.fg("muted", `[${p.command}]`);
-						const extra = p.name ? "" : theme.fg("dim", " (unmanaged)");
-						return `${dot} ${label} ${theme.fg("dim", p.command)}${extra}`;
-					});
-					return new Text(lines.join("\n"), 0, 0);
-				}
-
-				default: {
-					const c = result.content?.[0];
-					return new Text(c?.type === "text" ? c.text : "", 0, 0);
-				}
-			}
+			const text = result.content?.filter((c) => c.type === "text").map((c) => c.text).join("\n") || "";
+			return new Text(theme.fg("dim", expanded ? text : text.split("\n")[0]), 0, 0);
 		},
 	});
 }

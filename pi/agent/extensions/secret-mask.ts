@@ -35,9 +35,10 @@
 // `/secrets` shows what is being protected in this session.
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, type Dirent } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
+import { parseEnv } from "node:util";
 import { isAbsolute, join, relative, resolve } from "node:path";
 
 interface Config {
@@ -46,6 +47,8 @@ interface Config {
   builtinPatterns: boolean;
   minValueLength: number;
   mask: string;
+  maskAllValues: boolean;
+  sensitiveKeyPatterns: string[];
 }
 
 const DEFAULTS: Config = {
@@ -54,6 +57,12 @@ const DEFAULTS: Config = {
   builtinPatterns: true,
   minValueLength: 8,
   mask: "***",
+  maskAllValues: false,
+  sensitiveKeyPatterns: [
+    "(?:^|_)(?:key|token|secret|password|passwd|credential|credentials|authorization|cookie|cookies|access|refresh|bearer)(?:_|$)",
+    "(?:^|_)(?:apikey|accesstoken|refreshtoken|clientsecret)(?:_|$)",
+    "(?:^|_)private_key(?:_|$)",
+  ],
 };
 
 const SKIP_DIRS = new Set([
@@ -97,6 +106,8 @@ function mergeConfigs(globalCfg: Partial<Config> | null, projectCwd: string): Co
     builtinPatterns: p.builtinPatterns ?? g.builtinPatterns ?? DEFAULTS.builtinPatterns,
     minValueLength: p.minValueLength ?? g.minValueLength ?? DEFAULTS.minValueLength,
     mask: p.mask ?? g.mask ?? DEFAULTS.mask,
+    maskAllValues: p.maskAllValues ?? g.maskAllValues ?? DEFAULTS.maskAllValues,
+    sensitiveKeyPatterns: [...DEFAULTS.sensitiveKeyPatterns, ...(g.sensitiveKeyPatterns ?? []), ...(p.sensitiveKeyPatterns ?? [])],
   };
 }
 
@@ -132,7 +143,7 @@ function findSecretFiles(cwd: string, patterns: string[]): string[] {
     });
 
   const walk = (dir: string, depth: number): void => {
-    let entries: string[];
+    let entries: Dirent[];
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       const full = join(dir, e.name);
@@ -162,20 +173,26 @@ function findSecretFiles(cwd: string, patterns: string[]): string[] {
   return found;
 }
 
-/** Parse .env-style KEY=VALUE lines; returns values worth masking. */
-function parseEnvValues(text: string, minLen: number): string[] {
+/** Ordinary .env configuration (URLs, selectors, model IDs) is not secret.
+ * Credential keys and URLs containing userinfo are; token-format patterns
+ * remain active independently of key classification. maskAllValues opts a
+ * deliberately all-secret file set back into the old, indiscriminate policy. */
+function isSensitive(key: string, value: string, config: Config): boolean {
+  if (config.maskAllValues) return true;
+  const normalized = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/[.-]/g, "_").toLowerCase();
+  if (config.sensitiveKeyPatterns.some((pattern) => {
+    try { return new RegExp(pattern, "i").test(normalized); } catch { return false; }
+  })) return true;
+  try { const url = new URL(value); return Boolean(url.username || url.password); } catch { return false; }
+}
+
+/** Parse .env-style credential values without treating public config as secret. */
+function parseEnvValues(text: string, minLen: number, config: Config): string[] {
+  // Node's dotenv parser handles quoted/multiline values and inline comments;
+  // hand-splitting lines can otherwise miss the actual credential bytes.
   const values: string[] = [];
-  for (const rawLine of text.split(/\r?\n/)) {
-    let line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    if (line.startsWith("export ")) line = line.slice(7).trim();
-    const eq = line.indexOf("=");
-    if (eq <= 0) continue;
-    let v = line.slice(eq + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
-      v = v.slice(1, -1);
-    }
-    if (v && v.length >= minLen) values.push(v);
+  for (const [key, value] of Object.entries(parseEnv(text))) {
+    if (typeof value === "string" && value.length >= minLen && isSensitive(key, value, config)) values.push(value);
   }
   return values;
 }
@@ -183,7 +200,7 @@ function parseEnvValues(text: string, minLen: number): string[] {
 /** Parse a JSON secrets file (string/number leaf values at any depth).
  *  Returns the values worth masking plus the leaf key names they came
  *  from (for /secrets display). */
-function parseJsonValues(text: string, minLen: number): { values: string[]; keys: string[] } {
+function parseJsonValues(text: string, minLen: number, config: Config): { values: string[]; keys: string[] } {
   let obj: unknown;
   try {
     obj = JSON.parse(text);
@@ -194,31 +211,24 @@ function parseJsonValues(text: string, minLen: number): { values: string[]; keys
   const keys: string[] = [];
   const walk = (v: unknown, key?: string): void => {
     if (typeof v === "string") {
-      if (v.length >= minLen && !looksLikeIdentifier(v)) {
+      if (v.length >= minLen && isSensitive(key ?? "", v, config)) {
         values.push(v);
         if (key) keys.push(key);
       }
     } else if (typeof v === "number") {
       const s = String(v);
-      if (s.length >= minLen) {
+      if (s.length >= minLen && isSensitive(key ?? "", s, config)) {
         values.push(s);
         if (key) keys.push(key);
       }
     } else if (Array.isArray(v)) {
       for (const item of v) walk(item, key);
     } else if (v && typeof v === "object") {
-      for (const [k, child] of Object.entries(v)) walk(child, k);
+      for (const [k, child] of Object.entries(v)) walk(child, key ? `${key}.${k}` : k);
     }
   };
   walk(obj);
   return { values, keys };
-}
-
-/** Skip values that are clearly identifiers/hostnames rather than secrets:
- *  purely wordish (letters, digits, dot, dash, underscore), short-ish, and
- *  without any digit — e.g. "postgres", "localhost". */
-function looksLikeIdentifier(v: string): boolean {
-  return v.length < 12 && /^[A-Za-z][A-Za-z0-9_.-]*$/.test(v) && !/[0-9]/.test(v);
 }
 
 interface SecretSet {
@@ -239,7 +249,7 @@ async function buildSecretSet(cwd: string, config: Config): Promise<SecretSet> {
       statSig.push(`${f}:${st.mtimeMs}:${st.size}`);
     } catch { statSig.push(`${f}:-`); }
   }
-  const key = statSig.join("|");
+  const key = JSON.stringify([cwd, config, statSig]);
   if (cache && cache.key === key) return cache.set;
 
   const literals = new Set<string>();
@@ -249,13 +259,11 @@ async function buildSecretSet(cwd: string, config: Config): Promise<SecretSet> {
       const text = await readFile(f, "utf8");
       const isJson = f.endsWith(".json");
       if (isJson) {
-        const parsed = parseJsonValues(text, config.minValueLength);
+        const parsed = parseJsonValues(text, config.minValueLength, config);
         for (const v of parsed.values) literals.add(v);
         sources.set(f, parsed.keys);
       } else {
-        for (const v of parseEnvValues(text, config.minValueLength)) {
-          if (!looksLikeIdentifier(v)) literals.add(v);
-        }
+        for (const v of parseEnvValues(text, config.minValueLength, config)) literals.add(v);
         sources.set(
           f,
           text.split(/\r?\n/).filter((l) => /^\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*\s*=/.test(l))
@@ -299,16 +307,25 @@ function scrubText(text: string, set: SecretSet, mask: string): { text: string; 
 /** Replace every string in a details object (UI/session-log side). */
 function scrubDetails(details: unknown, set: SecretSet, mask: string): { value: unknown; hits: number } {
   let hits = 0;
+  const seen = new WeakMap<object, unknown>();
   const walk = (v: unknown): unknown => {
     if (typeof v === "string") {
       const r = scrubText(v, set, mask);
       hits += r.hits;
       return r.text;
     }
-    if (Array.isArray(v)) return v.map(walk);
     if (v && typeof v === "object") {
+      if (seen.has(v)) return seen.get(v);
+      if (Array.isArray(v)) {
+        const out: unknown[] = [];
+        seen.set(v, out);
+        for (const item of v) out.push(walk(item));
+        return out;
+      }
+      if (Object.getPrototypeOf(v) !== Object.prototype && Object.getPrototypeOf(v) !== null) return v;
       const out: Record<string, unknown> = {};
-      for (const [k, val] of Object.entries(v)) out[k] = walk(val);
+      seen.set(v, out);
+      for (const [k, val] of Object.entries(v)) Object.defineProperty(out, k, { value: walk(val), enumerable: true, writable: true, configurable: true });
       return out;
     }
     return v;
@@ -338,7 +355,7 @@ export default function secretMask(pi: ExtensionAPI) {
     const set = await buildSecretSet(ctx.cwd, config);
     if (!set.literals.length && !set.regexes.length) return;
 
-    const result: { content?: typeof event.content; details?: unknown } = {};
+    const result: { content?: typeof event.content; details?: unknown; structuredContent?: typeof event.structuredContent } = {};
     let changed = false;
 
     const newContent = event.content.map((c) => {
@@ -351,11 +368,9 @@ export default function secretMask(pi: ExtensionAPI) {
     });
     if (changed) result.content = newContent;
 
-    // Built-in tool details are plain JSON objects (they round-trip session
-    // storage); custom tool details may be arbitrary values, so leave those
-    // alone — model-facing `content` is scrubbed regardless.
-    const PLAIN_DETAILS_TOOLS = new Set(["bash", "powershell", "read", "edit", "grep", "find", "ls"]);
-    if (event.details !== undefined && event.details !== null && PLAIN_DETAILS_TOOLS.has(event.toolName)) {
+    // Scrub JSON portions of built-in and custom-tool details without
+    // destroying class instances, binary buffers or cyclic object graphs.
+    if (event.details !== undefined && event.details !== null) {
       const d = scrubDetails(event.details, set, config.mask);
       if (d.hits) {
         redactions += d.hits;
@@ -364,6 +379,16 @@ export default function secretMask(pi: ExtensionAPI) {
       }
     }
 
+    // Redacting content alone makes Pi discard structuredContent. Keep both
+    // representations consistent for programmatic/codemode consumers too.
+    if ("structuredContent" in event && event.structuredContent !== undefined) {
+      const structured = scrubDetails(event.structuredContent, set, config.mask);
+      if (structured.hits || result.content) {
+        result.structuredContent = structured.value as typeof event.structuredContent;
+        redactions += structured.hits;
+        changed = true;
+      }
+    }
     return changed ? result : undefined;
   });
 

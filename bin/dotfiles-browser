@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Isolated, bounded agent-browser commands. Keep every command for one session
+# in the same execution environment (sandbox or approved host pane).
+set -euo pipefail
+
+if [ "$#" -lt 2 ]; then
+  printf 'Usage: dotfiles-browser <unique-session> <agent-browser command> [args...]\nExample: dotfiles-browser qa-123 open about:blank\nThen:    dotfiles-browser qa-123 close\n' >&2
+  exit 2
+fi
+session="$1"
+shift
+[[ "$session" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$ ]] || { printf 'Invalid session name (1–40 letters/digits/_/-).\n' >&2; exit 2; }
+[ "$1" != connect ] || { printf 'Attaching to an existing browser is not allowed in isolated QA.\n' >&2; exit 2; }
+for arg in "$@"; do
+  case "$arg" in
+    --all|--session|--session=*|--session-name|--session-name=*|--profile|--profile=*|--state|--state=*|--auto-connect|--auto-connect=*|--cdp|--cdp=*)
+      printf 'This QA wrapper only controls its named isolated session; %s is not allowed.\n' "$arg" >&2
+      exit 2 ;;
+  esac
+done
+
+# A short path avoids Unix socket length limits. Never chmod/follow an
+# existing foreign directory or symlink, even in sticky /tmp.
+root="/tmp/dotfiles-browser-$(id -u)"
+private_dir() {
+  local path="$1"
+  if ! (umask 077; mkdir -- "$path") 2>/dev/null; then
+    [ -d "$path" ] && [ ! -L "$path" ] && [ -O "$path" ] && [ "$(stat -c '%a' -- "$path")" = 700 ] || {
+      printf 'Unsafe browser runtime directory: %s (must be owned, non-symlink, mode 0700).\n' "$path" >&2
+      exit 1
+    }
+  fi
+}
+private_dir "$root"
+private_dir "$root/$session"
+export AGENT_BROWSER_SOCKET_DIR="$root/$session"
+unset AGENT_BROWSER_PROFILE AGENT_BROWSER_STATE AGENT_BROWSER_SESSION_NAME AGENT_BROWSER_SESSION AGENT_BROWSER_AUTO_CONNECT AGENT_BROWSER_CDP
+limit="${DOTFILES_BROWSER_TIMEOUT_SECONDS:-30}"
+[[ "$limit" =~ ^[0-9]+$ ]] && [ "$limit" -ge 1 ] && [ "$limit" -le 300 ] || { printf 'Browser timeout must be 1–300 seconds.\n' >&2; exit 2; }
+# agent-browser 0.27 can silently ignore `screenshot path --full`, especially
+# a relative path that resembles a CSS selector. Canonicalize explicit output
+# paths and put flags before positional arguments, as its working CLI expects.
+screenshot_path=""
+if [ "$1" = screenshot ]; then
+  shift
+  options=()
+  positional=()
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --screenshot-dir|--screenshot-quality|--screenshot-format)
+        [ "$#" -ge 2 ] || { printf 'Missing value for %s.\n' "$1" >&2; exit 2; }
+        options+=("$1" "$2"); shift 2 ;;
+      -*) options+=("$1"); shift ;;
+      *) positional+=("$1"); shift ;;
+    esac
+  done
+  [ "${#positional[@]}" -le 2 ] || { printf 'Screenshot expects [selector] [path].\n' >&2; exit 2; }
+  count="${#positional[@]}"
+  if [ "$count" -eq 2 ] || { [ "$count" -eq 1 ] && [[ "${positional[0]}" =~ \.(png|jpg|jpeg)$|^\./|^\.\./|^/ ]]; }; then
+    index=$((count - 1))
+    screenshot_path="$(realpath -m -- "${positional[$index]}")"
+    positional[$index]="$screenshot_path"
+  fi
+  set -- screenshot "${options[@]}" "${positional[@]}"
+fi
+if [ -n "$screenshot_path" ]; then
+  before="$(stat -c '%i:%s:%y' -- "$screenshot_path" 2>/dev/null || true)"
+  timeout --signal=TERM --kill-after=3s "${limit}s" agent-browser --session "$session" "$@"
+  after="$(stat -c '%i:%s:%y' -- "$screenshot_path" 2>/dev/null || true)"
+  [ -f "$screenshot_path" ] && [ -s "$screenshot_path" ] && [ "$after" != "$before" ] || {
+    printf 'Browser reported success but did not create or update screenshot: %s\n' "$screenshot_path" >&2; exit 1;
+  }
+else
+  exec timeout --signal=TERM --kill-after=3s "${limit}s" agent-browser --session "$session" "$@"
+fi

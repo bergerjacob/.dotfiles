@@ -71,8 +71,24 @@ individually into `~/.pi/agent/`. It intentionally does not link that entire
 runtime directory: provider credentials, sessions, model caches, and installed
 package data remain local to each machine. Packages declared in the shared Pi
 settings are installed into the machine-local package directory by Pi. Pi-DCP's
-shared config is linked separately to `~/.pi-dcp/config.json`; its session state,
-statistics, and generated prompts remain machine-local.
+shared config is linked separately to `~/.pi-dcp/config.json`. The repo-owned
+rolling fork, vendored source and AGPL license live together under
+`pi/agent/extensions/dcp/`, carried by the same desktop link/minimal-dev tree copy.
+The pinned npm package remains installed for its skill/dependencies but has its
+extension resource disabled, avoiding duplicate registration. Rolling protection
+targets 100k estimated tokens, scales to small windows and does not protect an
+entire user turn. Compression records and decompress/recompress state are stored
+in the active session branch; external upstream JSON is not authoritative.
+Native automatic compaction remains disabled. Pinned content/prose/arguments can
+still exhaust context; see the fork's `UPSTREAM.md` for estimates and limits. Managed subagent defaults
+also live in `pi/agent/extensions/subagent/config.json`; artifacts and schedules
+stay outside project worktrees. See `pi/README.md` for model routing, context
+budgets, `/pi-health`, validation and remaining upstream limitations.
+
+Both desktop profiles link the shared `bin/dotfiles-browser` wrapper for isolated,
+bounded browser QA with writable private socket storage. Minimal-dev does not
+install that desktop wrapper or browsers. The Pi sandbox remains enabled; host
+execution and sandbox execution are intentionally distinct environments.
 
 Sway loads the shared `sway/config` and includes the selected profile as
 `~/.config/sway/machine.conf`. The profile include defines output names, modes,

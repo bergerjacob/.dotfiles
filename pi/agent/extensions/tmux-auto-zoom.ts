@@ -11,7 +11,7 @@ const AUTO_ZOOM_OPTION = "@pi_auto_zoom";
  * manual zoom is never toggled accidentally and the state survives /reload.
  */
 export default function tmuxAutoZoom(pi: ExtensionAPI) {
-  const piPane = process.env.TMUX_PANE;
+  const piPane = process.env.TMUX_PANE || "";
   if (!process.env.TMUX || !piPane || process.env.HERDR_ENV) return;
 
   async function getPaneOption(): Promise<boolean> {
@@ -50,13 +50,13 @@ export default function tmuxAutoZoom(pi: ExtensionAPI) {
       "-t",
       piPane,
       "-F",
-      "#{pane_id}\t#{@pi_name}",
+      "#{pane_id}\t#{@pi_name}\t#{@pi_owner}",
     ]);
     if (result.code !== 0) return false;
 
     return result.stdout.split("\n").some((line) => {
-      const [paneId, name] = line.split("\t");
-      return paneId !== piPane && Boolean(name?.trim());
+      const [paneId, name, owner] = line.split("\t");
+      return paneId !== piPane && owner === piPane && Boolean(name?.trim());
     });
   }
 

@@ -16,7 +16,8 @@ Shared configuration stays at the repository root or in an application directory
 - `chrome/`: shared desktop entries that call the selected machine's `dotfiles-chrome` wrapper.
 - `applications/`: shared desktop entries that launch through the profile-overridden `bin/` wrappers, so the entry itself stays machine-neutral.
 - `nvim/`, `opencode/`, `waybar/`, and similar directories: shared application configuration.
-- `pi/agent/`: shared declarative Pi settings, agents, keybindings, and user-authored resources; credentials, sessions, and installed package data remain machine-local.
+- `pi/agent/`: shared declarative Pi settings, agents, keybindings, and user-authored resources; credentials, sessions, and installed package data remain machine-local. `pi/README.md` documents reliability defaults, regression checks and upstream limitations. The nested `extensions/subagent/config.json` is managed configuration, not runtime state. `extensions/dcp/` is the repo-owned, AGPL-attributed rolling fork pinned to pi-dcp 0.2.0; keep its source/license together, disable the npm extension resource, and retain native `compaction.enabled:false`. Branch compression state belongs in session entries, never an authoritative external cache.
+- `bin/dotfiles-browser`: isolated browser-QA wrapper linked on both desktop profiles; not installed by minimal-dev. It scopes socket storage and deadlines without weakening sandbox policy.
 - `packages`: packages required on both machines.
 - `services`: system services required on both machines.
 
@@ -135,10 +136,17 @@ Avoid unconditional upgrades during setup. Package installation should continue 
 At minimum, run these checks after relevant changes:
 
 ```bash
-bash -n setup.sh laptop/bin/* pc/bin/* sway/*.sh
+bash -n setup.sh bin/* laptop/bin/* pc/bin/* sway/*.sh
 zsh -n zshrc
 jq empty opencode/oh-my-opencode-slim.json opencode/opencode.json pi/agent/settings.json pi/agent/keybindings.json pi/agent/models.json pi/agent/pi-dcp.json
 git diff --check
+```
+
+For Pi extension, runtime-wrapper or managed Pi configuration changes, also run:
+
+```bash
+node --test pi/tests/*.test.ts
+jq empty pi/agent/extensions/subagent/config.json
 ```
 
 Validate desktop entries when they change:
