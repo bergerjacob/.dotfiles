@@ -8,6 +8,9 @@ vim.g.colorscheme = "tokyonight-moon"
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
+-- Refresh a stale tmux/SSH clipboard environment before provider selection.
+require('core.clipboard')
+
 -- Load core settings
 require('core.options')
 require('core.keymaps')
