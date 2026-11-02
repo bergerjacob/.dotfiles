@@ -4,5 +4,5 @@
 #
 # Same recipe as pc/bin/discord: the environment variable is what survives PTB's
 # own bare-argv host relaunch, so nothing inside ~/.config/discordptb is touched.
-export ELECTRON_OZONE_PLATFORM_HINT=x11
+export XDG_SESSION_TYPE=x11
 exec /usr/bin/discord-ptb --ozone-platform=x11 --disable-gpu-memory-buffer-video-frames "$@"

@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# dotfiles-discord-check — verify that every Discord / Discord PTB window on the
+# NVIDIA desktop runs the way pc/bin/discord launches it: XWayland plus
+# --disable-gpu-memory-buffer-video-frames. Native Wayland flickers on this GPU.
+#
+# Why this exists:
+#   Discord's host updater relaunches the new app-<version>/ host with bare
+#   argv, which drops the wrapper's flags. The wrapper's XDG_SESSION_TYPE=x11
+#   keeps the relaunch on XWayland, but the video-frames flag has no
+#   environment equivalent and is lost until the next wrapper launch. Every
+#   earlier recurrence was found only after the glitches came back, so the PC
+#   Sway rules run this with --notify whenever a Discord window maps.
+#
+# Usage:
+#   dotfiles-discord-check            print each Discord process; exit 1 if any is wrong
+#   dotfiles-discord-check --notify   also raise one desktop notification per wrong process
+set -euo pipefail
+
+notify=0
+[ "${1:-}" = "--notify" ] && notify=1
+
+REQUIRED_FLAG=--disable-gpu-memory-buffer-video-frames
+STATE="${XDG_RUNTIME_DIR:-/tmp}/dotfiles-discord-check.notified"
+
+windows=$(swaymsg -t get_tree -r | jq -r '
+    .. | objects | select(has("pid") and .pid != null)
+    | select((.app_id // .window_properties.class // "") | test("^discord(-ptb)?$"; "i"))
+    | "\(.pid) \(.shell) \(.app_id // .window_properties.class)"' | sort -u -k1,1n)
+
+if [ -z "$windows" ]; then
+  echo "no Discord windows"
+  exit 0
+fi
+
+status=0
+while read -r pid shell name; do
+  args=$({ tr '\0' ' ' < "/proc/$pid/cmdline"; } 2>/dev/null || true)
+  problems=()
+  [ "$shell" = xwayland ] || problems+=("running native Wayland")
+  [[ " $args " == *" $REQUIRED_FLAG "* ]] || problems+=("started without $REQUIRED_FLAG")
+
+  if [ ${#problems[@]} -eq 0 ]; then
+    echo "ok    $name pid $pid ($shell, flags present)"
+    continue
+  fi
+
+  status=1
+  reason=$(printf '%s, ' "${problems[@]}")
+  reason=${reason%, }
+  echo "WRONG $name pid $pid: $reason"
+  echo "      argv: ${args:-unreadable}"
+
+  # One notification per bad process: the rule fires again for the updater
+  # splash and for every re-show from the tray.
+  if [ "$notify" = 1 ] && ! grep -qx "$pid" "$STATE" 2>/dev/null; then
+    echo "$pid" >> "$STATE"
+    notify-send -u normal \
+      "$name started without its NVIDIA launch flags" \
+      "Likely a Discord update relaunch ($reason). Quit it from the tray icon (closing the window only hides it), then relaunch from rofi." \
+      >/dev/null 2>&1 || true
+  fi
+done <<< "$windows"
+
+exit "$status"
