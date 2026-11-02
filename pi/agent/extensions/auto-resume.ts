@@ -21,6 +21,7 @@ const MARGIN_MS = 30_000;
 const MIN_DELAY_MS = 60_000;
 const MAX_DELAY_MS = 24 * 60 * 60_000;
 const POLL_MS = 20 * 60_000;
+const BUSY_RETRY_MS = 30_000;
 const BACKOFF_BASE_MS = 2 * 60_000;
 const BACKOFF_CAP_MS = 30 * 60_000;
 const MAX_CONSECUTIVE = 48;
@@ -147,12 +148,23 @@ export default function autoResume(pi: ExtensionAPI) {
       ctx.ui.setStatus("auto-resume", label);
       clearStatus = () => ctx.ui.setStatus("auto-resume", undefined);
     }
-    timer = setTimeout(() => {
+    const fire = () => {
       timer = undefined;
       clearStatus?.();
       clearStatus = undefined;
-      if (!ctx.isIdle()) return;
-      pi.sendUserMessage("Continue").catch(() => {});
-    }, delayMs);
+      // sendUserMessage returns void in pi's extension API (not a promise), and an
+      // exception thrown from a timer callback is uncaught and kills the process.
+      try {
+        if (!ctx.isIdle()) {
+          // busy (e.g. a notification turn is running); try again shortly instead of dropping the resume
+          timer = setTimeout(fire, BUSY_RETRY_MS);
+          return;
+        }
+        void Promise.resolve(pi.sendUserMessage("Continue")).catch(() => {});
+      } catch {
+        // stale ctx after a session replacement; nothing safe to do
+      }
+    };
+    timer = setTimeout(fire, delayMs);
   });
 }
