@@ -1,12 +1,20 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { openAICodexResponsesApi } from "@earendil-works/pi-ai/compat";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { refreshWayland } from "./runtime-health/desktop.ts";
+import { configureNodeProxy, proxyHealth, registerSandboxCodex } from "./runtime-health/network.ts";
 
 const ENTRY = "dotfiles.compaction";
 
 export default function (pi: ExtensionAPI) {
+	configureNodeProxy();
+	if (process.env.SANDBOX_RUNTIME === "1") {
+		// Only nested Codex clients: preserve native auth/catalog and host WebSocket
+		// performance. Never turn off the outer sandbox or alter stored credentials.
+		registerSandboxCodex(pi, openAICodexResponsesApi());
+	}
 	let started: number | undefined;
 	pi.on("session_start", async () => { await refreshWayland(); });
 	pi.on("session_before_compact", (event, ctx) => {
@@ -39,6 +47,9 @@ export default function (pi: ExtensionAPI) {
 				`Model: ${ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "none"}`,
 				`Context estimate: ${usage?.tokens ?? "unknown"} / ${usage?.contextWindow ?? ctx.model?.contextWindow ?? "unknown"}`,
 				`Sandbox: ${sandbox}; per-session toggle may differ. Use /sandbox for effective state.`,
+				proxyHealth(),
+				`Codex automatic transport: ${process.env.SANDBOX_RUNTIME === "1" ? "SSE inside inherited sandbox" : "host default"}; explicit transport choices are preserved.`,
+				"Sandbox networking uses an allowlisted proxy; clearing proxy variables cannot restore direct egress. OAuth refresh also needs writable credential storage (managed auth.json is write-protected).",
 				"Sandbox ps/localhost checks cannot prove host processes or servers are down. Never remove a dev lock/cache on that evidence.",
 				`Wayland: ${process.env.WAYLAND_DISPLAY || "not set"}${repaired ? " (repaired for Pi and future children)" : ""}; DISPLAY: ${process.env.DISPLAY ? "set" : "not set"}`,
 				"Browser QA: dotfiles-browser <unique-session> <command>; keep all commands in the same approved execution environment.",

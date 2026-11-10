@@ -19,7 +19,9 @@ services, install the pinned font, and link the selected profile. Use
 them.
 
 The minimal-dev mode is for a user-writable headless server. It installs no
-packages, uses no sudo, and copies only the OpenCode and Pi configuration.
+packages, uses no sudo, and copies only the OpenCode and Pi configuration. It
+installs bubblewrap and socat (needed by pi-sandbox) only when it is already
+root or has passwordless sudo; otherwise it prints the command to run.
 EOF
 }
 
@@ -303,6 +305,34 @@ minimal_copy_tree() {
   done < <(find "$source_root" -type f -print0 | sort -z)
 }
 
+# pi-sandbox needs bubblewrap and socat. Install them only when that needs no
+# prompt (root or passwordless sudo); otherwise print the command to run.
+minimal_check_sandbox_deps() {
+  local missing=() tool runner=()
+
+  for tool in bwrap socat; do
+    command -v "$tool" >/dev/null 2>&1 || missing+=("$tool")
+  done
+  [ "${#missing[@]}" -gt 0 ] || return 0
+
+  if [ "$(id -u)" -eq 0 ]; then
+    runner=()
+  elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+    runner=(sudo)
+  else
+    printf '[setup-minimal-dev] pi-sandbox needs bubblewrap and socat; run as root: apt-get install -y bubblewrap socat\n' >&2
+    return 0
+  fi
+
+  if command -v apt-get >/dev/null 2>&1; then
+    printf '[setup-minimal-dev] installing bubblewrap socat for pi-sandbox\n'
+    "${runner[@]}" apt-get install -y bubblewrap socat \
+      || printf '[setup-minimal-dev] could not install bubblewrap/socat; pi-sandbox will fail to start\n' >&2
+  else
+    printf '[setup-minimal-dev] install bubblewrap and socat with your package manager for pi-sandbox\n' >&2
+  fi
+}
+
 setup_minimal() {
   local pi_entry
 
@@ -317,6 +347,12 @@ setup_minimal() {
     fi
   done
   minimal_copy_file "$DOTFILES_DIR/pi/agent/pi-dcp.json" "$HOME/.pi-dcp/config.json"
+  minimal_check_sandbox_deps
+
+  if [ "$(id -u)" -eq 0 ]; then
+    printf '[setup-minimal-dev] running as root: Claude Code refuses bypassPermissions as root, so pi-claude-bridge exits with code 1.\n' >&2
+    printf '[setup-minimal-dev] use a non-root user, or export IS_SANDBOX=1 before starting pi.\n' >&2
+  fi
 
   printf '[setup-minimal-dev] complete\n'
 }

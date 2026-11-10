@@ -213,21 +213,24 @@ export function placeholderToolResult(m: ToolResultMessage, reason: string): num
 
 /**
  * Replace a tool result's content with a compression-summary placeholder.
- * Caller must clone `m` first. The summary itself stays in the per-session
- * compression record; the placeholder gives the model just enough context to
- * recall what was compressed.
+ * Caller must clone `m` first. The summary is rendered in place on the first
+ * result of each record, so it keeps its chronological position and never
+ * masquerades as a user message.
  */
 export function compressionPlaceholderToolResult(
 	m: ToolResultMessage,
 	compressionId: number,
 	topic: string,
+	/** Rendered once, in place, on the first result of a record; later results only point to it. */
+	summary?: string,
 ): number {
 	if (isAlreadyPlaceholder(m)) return 0;
 	const before = toolResultTokens(m);
 	m.content = [
 		{
 			type: "text",
-			text: `${COMPRESSION_PLACEHOLDER_PREFIX} #${compressionId}: ${topic}] (see /dcp decompress ${compressionId} to restore)`,
+			text: `${COMPRESSION_PLACEHOLDER_PREFIX} #${compressionId}: ${topic}] (see /dcp decompress ${compressionId} to restore)` +
+				(summary === undefined ? ` Summary: see the first result of compression #${compressionId}.` : `\nSummary of the compressed work-stream (replaces the original outputs of this and the following results of #${compressionId}):\n${summary}`),
 		},
 	];
 	m.details = undefined;

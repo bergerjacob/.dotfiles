@@ -109,30 +109,17 @@ const MODES: Record<string, Mode> = {
       vision: null, // gpt-6.1 sees images natively; no vision sidecar wanted
     },
   },
-  glm: {
-    description: "All Z.ai GLM (5.3 / 5.3-flash)",
-    primary: { model: "zai/glm-5.3", thinking: "high" },
+  // Everything on OpenRouter's DeepSeek V4.1 Flash; thinking level is the
+  // only difference between the slots. It sees images natively, so no vision
+  // sidecar is wanted.
+  openrouter: {
+    description: "All DeepSeek V4.1 Flash via OpenRouter",
+    primary: { model: "openrouter/deepseek/deepseek-v4.1-flash", thinking: "high" },
     agents: {
-      fast: { model: "zai/glm-5.3-flash", thinking: "low" },
-      standard: { model: "zai/glm-5.3", thinking: "high" },
-      oracle: { model: "zai/glm-5.3", thinking: "max" },
-      vision: { model: "zai/glm-5.3-flash", thinking: "low" },
-    },
-  },
-  // Everything on the OpenCode Go subscription (one API key, dollar-based
-  // limits). DeepSeek V4.1 Flash is the best-bang-for-buck tier on Go
-  // (~26k req/5h at Flash pricing, multimodal) and carries both the primary
-  // and the mechanical fast slot, differing only in thinking level; GLM-5.3
-  // has the strongest agentic-coding results and Kimi K3 the long-horizon
-  // reasoning.
-  opencode: {
-    description: "OpenCode Go — DeepSeek V4.1 Flash primary, everything on one Go subscription",
-    primary: { model: "opencode-go/deepseek-v4.1-flash", thinking: "high" },
-    agents: {
-      fast: { model: "opencode-go/deepseek-v4.1-flash", thinking: "low" },
-      standard: { model: "opencode-go/glm-5.3", thinking: "high" },
-      oracle: { model: "opencode-go/kimi-k3", thinking: "max" },
-      vision: null, // v4.1-flash sees images natively; no vision sidecar wanted
+      fast: { model: "openrouter/deepseek/deepseek-v4.1-flash", thinking: "low" },
+      standard: { model: "openrouter/deepseek/deepseek-v4.1-flash", thinking: "high" },
+      oracle: { model: "openrouter/deepseek/deepseek-v4.1-flash", thinking: "max" },
+      vision: null,
     },
   },
   // Claude Pro/Max plan quota through Claude Code itself: the pi-claude-bridge
@@ -146,6 +133,21 @@ const MODES: Record<string, Mode> = {
       standard: { model: "claude-bridge/claude-sonnet-5-5", thinking: "high" },
       oracle: { model: "claude-bridge/claude-opus-5-5", thinking: "high" },
       vision: null, // Sonnet 5.5 sees images natively; no vision sidecar wanted
+    },
+  },
+  // Spend-freely Claude preset for when plan quota is plentiful: Opus 5.5 at
+  // xhigh is the primary, the mechanical fast slot steps up from Haiku to
+  // Sonnet, and the oracle slot gets Fable 5.1 (the most expensive model) at
+  // max effort. Opus 5.5 and Fable 5.1 both accept xhigh/max in pi-ai's
+  // catalog; the bridge maps those straight to Claude Code's effort levels.
+  "claude-xl": {
+    description: "Claude plan quota, no frugality — Opus 5.5 xhigh primary, Fable 5.1 max oracle",
+    primary: { model: "claude-bridge/claude-opus-5-5", thinking: "xhigh" },
+    agents: {
+      fast: { model: "claude-bridge/claude-sonnet-5-5", thinking: "medium" },
+      standard: { model: "claude-bridge/claude-opus-5-5", thinking: "high" },
+      oracle: { model: "claude-bridge/claude-fable-5-1", thinking: "max" },
+      vision: null, // Opus 5.5 sees images natively; no vision sidecar wanted
     },
   },
   // Mixed combo: DeepSeek V4.1 Flash (OpenCode Go) carries the cheap volume
@@ -953,7 +955,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("mode", {
     description:
-      "Model preset for primary + subagents: /mode <openai|glm|opencode|claude|ds-claude-combo|ds-gpt-combo|custom>, /mode off (reset to default), or /mode for a picker (custom opens the table editor)",
+      "Model preset for primary + subagents: /mode <openai|openrouter|claude|claude-xl|ds-claude-combo|ds-gpt-combo|custom>, /mode off (reset to default), or /mode for a picker (custom opens the table editor)",
     getArgumentCompletions: (prefix: string): AutocompleteItem[] | null => {
       const items: AutocompleteItem[] = [
         ...Object.entries(MODES).map(([name, mode]) => ({

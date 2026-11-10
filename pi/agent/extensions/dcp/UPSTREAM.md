@@ -8,8 +8,9 @@ corresponding local source, not an installed-node_modules patch.
 
 Only needed upstream modules are vendored under `vendor/lib`: config, message
 helpers, state types/factory, deduplication and purge-errors. The upstream npm
-package remains pinned for its skill/dependencies; its extension resource is
-DISABLED (`extensions: []`). Pi discovers only this directory's `index.ts`.
+package remains pinned, but its extension and skill resources are DISABLED
+(`extensions: []`, `skills: []`). Pi discovers only this directory's `index.ts`
+and the fork-matching managed `../../skills/pi-dcp/SKILL.md`.
 Do not add an additional settings extension path or enable the npm entry.
 Desktop's existing extensions link and minimal-dev's recursive copy carry the
 entire directory, including license; no external source symlinks are required.
@@ -33,14 +34,29 @@ entire directory, including license; no external source symlinks are required.
 - Crossing messages, entire parallel batches, call/result IDs and pending batches
   are protected. Original user/system instructions are never removed. Mutation,
   skill and compression tools remain pinned (including namespaced mutations,
-  apply_patch and reads of SKILL.md). Range overlap is refused atomically.
+  apply_patch and reads of SKILL.md). Ranges skip ineligible calls; explicit
+  ID lists with any ineligible target are refused atomically.
   Already-compressed targets are excluded from actionable endpoint/savings
   suggestions and new tool/sweep requests, preventing futile repeated nudges.
 - Every request reevaluates nudges with an uncapped request counter, eligible
   endpoints and savings; no before_agent_start-only reminders, synthetic
   persisted user boundaries, continuation queues or native compaction.
-- Summaries appear once per active record in request-local custom context. Stored
-  compress arguments are projected to a marker so they don't duplicate summaries.
+- No actionable savings means no autonomous nudge, including above the soft
+  ceiling and in manual/denied mode. Removed the soft-ceiling handoff instruction:
+  eligibility and approximate token pressure do not establish exhaustion.
+  Tool/refusal guidance and the managed skill say to continue bounded work;
+  SKILL.md reads stay pinned. Raw byte/signature estimates no longer masquerade
+  as footer context usage: stock provider-backed accounting is retained, with
+  a branch-replayed pending-response status after rewrites. Invalid/zero prompt
+  usage does not clear pending state. Opt-in trace includes raw/projected
+  estimates and provider context separately.
+- A real SDK fixture drives tools, outgoing transformation, session persistence
+  and the stock footer with a scripted in-process provider. It checks shrinkage,
+  summary visibility, canonical originals, decompress/recompress and error/zero
+  usage, without credentials or network calls.
+- Summaries appear once per applicable active record, in place on its first
+  compressed result. Stored compress arguments are projected to a marker so
+  they don't duplicate summaries.
   Suspensions/recompressions/manual state use append-only branch custom entries.
 - Success result details contain the complete record. A branch custom entry is
   appended synchronously inside execute, before agent_end. Legacy successful
@@ -67,9 +83,11 @@ reasoning. It is not calibrated against stale previous-response usage.
 Only tool outputs and old errored non-pinned arguments are pruned. Successful
 arguments, prose, original instructions, mutation/skill results and summaries
 can grow without bound in a 12-hour single request. Native compaction stays OFF.
-If those dominate the model window, stop and hand off to a fresh session; a new
-user turn alone does not reset the rolling budget. Summary correctness still
-requires model judgment. No claim of unlimited operation or lossless summaries.
+Only an actual context-limit failure or verified insufficient headroom for the
+next bounded step after useful pruning warrants a fresh-session handoff; a soft
+threshold, compression count or lack of eligible results alone does not. Continue
+bounded work otherwise. A new user turn alone does not reset the rolling budget.
+Summary correctness still requires model judgment. No claim of unlimited operation or lossless summaries.
 
 Commands: `/dcp context` (also default/help), `/dcp stats`, `/dcp manual on|off`,
 `/dcp sweep [positive count]` (eligible results only, deliberately lossy),

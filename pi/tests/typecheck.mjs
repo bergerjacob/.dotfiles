@@ -16,7 +16,7 @@ try {
     compilerOptions: {
       target: "ES2023", module: "ESNext", moduleResolution: "bundler", allowImportingTsExtensions: true,
       noEmit: true, strict: true, skipLibCheck: true,
-      paths: { typebox: [join(pi, "node_modules/typebox/build/index.d.mts")], ...Object.fromEntries(["pi-coding-agent", "pi-ai", "pi-tui"].map((name) => [
+      paths: { "@earendil-works/pi-ai/compat": [join(pi, "node_modules/@earendil-works/pi-ai/dist/compat.d.ts")], typebox: [join(pi, "node_modules/typebox/build/index.d.mts")], ...Object.fromEntries(["pi-coding-agent", "pi-ai", "pi-tui"].map((name) => [
         `@earendil-works/${name}`, [name === "pi-coding-agent" ? join(pi, "dist/index.d.ts") : join(pi, "node_modules/@earendil-works", name, "dist/index.d.ts")],
       ])) },
       typeRoots: [join(pi, "node_modules/@types")],

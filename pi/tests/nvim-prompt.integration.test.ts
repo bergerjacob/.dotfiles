@@ -162,11 +162,11 @@ test("real Neovim handles Unicode, tabs, multiline prompts and height cap", { sk
 test("real parser preserves paste, splits keys, and routes image insertion", { skip: !installed, timeout: 5000 }, async () => {
 	const f = await createEditor(40);
 	try {
-		f.editor.handleInput("\x1b[200~/mode glm\n\x16\x1b[201~");
+		f.editor.handleInput("\x1b[200~/mode openrouter\n\x16\x1b[201~");
 		await f.settle();
 		assert.equal(f.clipboardPastes, 0);
 		assert.deepEqual(f.submitted, []);
-		assert(f.editor.getText().startsWith("/mode glm\n"));
+		assert(f.editor.getText().startsWith("/mode openrouter\n"));
 		f.editor.setText("");
 		await f.settle();
 		// Fragmented Kitty Ctrl+V must still reach Pi, not literal Neovim input.
@@ -175,14 +175,14 @@ test("real parser preserves paste, splits keys, and routes image insertion", { s
 		await f.settle();
 		assert.equal(f.clipboardPastes, 1);
 		assert.equal(f.editor.getText(), "/tmp/pi-clipboard-test.png");
-		f.editor.setText("/mode glm");
+		f.editor.setText("/mode openrouter");
 		await f.settle();
 		f.editor.handleInput("\r");
 		await f.settle();
-		assert.deepEqual(f.submitted, ["/mode glm"]);
+		assert.deepEqual(f.submitted, ["/mode openrouter"]);
 		f.editor.handleInput("hello\r");
 		await f.settle();
 		assert.equal(f.editor.getText(), "hello\n");
-		assert.deepEqual(f.submitted, ["/mode glm"]);
+		assert.deepEqual(f.submitted, ["/mode openrouter"]);
 	} finally { await f.dispose(); }
 });

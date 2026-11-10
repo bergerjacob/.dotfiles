@@ -17,7 +17,7 @@ test("native automatic compaction stays disabled while manual budgets remain val
 	for (const [provider, id, window] of [
 		["openai-codex", "gpt-6.1-sol", 500000], ["openai-codex", "gpt-6-luna", 272000],
 		["openai-codex", "gpt-6-astra", 272000], ["zai", "glm-5.3", 1000000],
-		["opencode-go", "deepseek-v4.1-flash", 1000000], ["opencode-go", "kimi-k3", 1048576],
+		["opencode-go", "deepseek-v4.1-flash", 1000000], ["openrouter", "deepseek/deepseek-v4.1-flash", 1000000],
 		["claude-bridge", "claude-sonnet-5-5", 1000000],
 	] as const) {
 		const effective = manager.getCompactionSettings({ provider, id });

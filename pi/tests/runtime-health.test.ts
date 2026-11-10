@@ -44,7 +44,7 @@ test("compaction telemetry records success/failure without retaining provider er
 	const { default: extension } = await jiti.import("../agent/extensions/runtime-health.ts");
 	const handlers = new Map<string, any>();
 	const entries: any[] = [];
-	extension({ on: (name: string, fn: any) => handlers.set(name, fn), registerCommand() {}, appendEntry: (type: string, data: any) => entries.push({ type, data }) });
+	extension({ on: (name: string, fn: any) => handlers.set(name, fn), registerCommand() {}, registerProvider() {}, appendEntry: (type: string, data: any) => entries.push({ type, data }) });
 	const start = handlers.get("session_before_compact");
 	start({ reason: "threshold", preparation: { tokensBefore: 12345 } }, { model: { provider: "test", id: "model" } });
 	handlers.get("session_compact")({});

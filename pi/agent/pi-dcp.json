@@ -22,17 +22,17 @@
   "compress": {
     "mode": "range",
     "permission": "allow",
-    "minContextLimit": "25%",
-    "maxContextLimit": "50%",
+    "minContextLimit": "50%",
+    "maxContextLimit": "75%",
     "modelMinLimits": {
-      "openai-codex/gpt-6.1-sol": "25%"
-    },
-    "modelMaxLimits": {
       "openai-codex/gpt-6.1-sol": "50%"
     },
-    "nudgeEveryTurns": 1,
+    "modelMaxLimits": {
+      "openai-codex/gpt-6.1-sol": "75%"
+    },
+    "nudgeEveryTurns": 3,
     "nudgeFrequency": 1,
-    "iterationNudgeThreshold": 6,
+    "iterationNudgeThreshold": 20,
     "nudgeForce": "strong",
     "protectedTools": []
   },

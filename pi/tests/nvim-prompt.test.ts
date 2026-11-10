@@ -78,8 +78,8 @@ describe("parsed Neovim key routing", () => {
 		assert.deepEqual(f.passed, ["\x16"]);
 	});
 	for (const active of [false, true]) {
-		test(`/mode glm submits verbatim with autocomplete=${active}`, () => {
-			const f = fixture({ text: "/mode glm", active });
+		test(`/mode openrouter submits verbatim with autocomplete=${active}`, () => {
+			const f = fixture({ text: "/mode openrouter", active });
 			f.editor.routeKeys("\r");
 			assert.equal(f.counts().submitted, 1);
 			assert.deepEqual(f.sent, []);
@@ -97,7 +97,7 @@ describe("parsed Neovim key routing", () => {
 		assert.equal(f.counts().submitted, 0);
 		assert.deepEqual(f.passed, ["\r"]);
 	});
-	for (const text of ["hello", "/mode glm\nmore text", " /some/path", "//comment"]) {
+	for (const text of ["hello", "/mode openrouter\nmore text", " /some/path", "//comment"]) {
 		test(`ordinary/multiline text keeps insert-mode newlines: ${JSON.stringify(text)}`, () => {
 			const f = fixture({ text });
 			f.editor.routeKeys("\r");
@@ -106,7 +106,7 @@ describe("parsed Neovim key routing", () => {
 		});
 	}
 	test("other Neovim buffers do not submit slash text", () => {
-		const f = fixture({ text: "/mode glm", prompt: false });
+		const f = fixture({ text: "/mode openrouter", prompt: false });
 		f.editor.routeKeys("\r");
 		assert.equal(f.counts().submitted, 0);
 		assert.deepEqual(f.sent, ["<CR>"]);
@@ -122,7 +122,7 @@ describe("parsed Neovim key routing", () => {
 		const normal = fixture({ mode: "normal" });
 		normal.editor.routeKeys("\r");
 		assert.equal(normal.counts().submitted, 1);
-		const cmdline = fixture({ mode: "cmdline_normal", text: "/mode glm" });
+		const cmdline = fixture({ mode: "cmdline_normal", text: "/mode openrouter" });
 		cmdline.editor.routeKeys("\r");
 		assert.deepEqual(cmdline.sent, ["<CR>"]);
 	});

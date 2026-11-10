@@ -10,6 +10,18 @@ export interface ModelBudget { contextWindow?: number; maxTokens?: number; provi
 export const ENTRY = "dotfiles-dcp-v1";
 export const SUMMARY = "dotfiles-dcp-summary";
 export const REMINDER = "dotfiles-dcp-reminder";
+/** pi-claude-bridge mirrors Pi's history into a Claude Code session and only re-syncs on a message-count
+ *  change, so in-place rewrites of earlier messages (compression) never reach the model unless the bridge
+ *  is told the history was rewritten. It exposes a process-wide hook set for exactly that; absent when
+ *  the bridge is not loaded, in which case this is a no-op (native providers re-read Pi's context). */
+export const BRIDGE_REBUILD_HOOKS = Symbol.for("claude-bridge:markRebuildHooks");
+export function notifyHistoryRewritten(sessionId: string | null | undefined, event: string): number {
+	const hooks = (globalThis as Record<symbol, unknown>)[BRIDGE_REBUILD_HOOKS] as Set<(session: string | null, event: string) => void> | undefined;
+	if (!hooks || typeof hooks[Symbol.iterator] !== "function") return 0;
+	let called = 0;
+	for (const hook of [...hooks]) { try { hook(sessionId ?? null, event); called++; } catch { /* a faulty hook must never break compression */ } }
+	return called;
+}
 export function isGenerated(m: Message): boolean { return m.role as string === "custom" && [SUMMARY, REMINDER].includes(m.customType as string); }
 export function estimateMessage(m: Message, imageTokens = 4096): number {
 	const content = m.content;
@@ -79,23 +91,46 @@ export function actionablePolicy(policy: Policy, messages: Message[], state: Ses
 	return { ...policy, eligibleIds, savings };
 }
 export function endpointHint(policy: Policy): string {
-	return policy.eligibleIds.length ? `Eligible endpoints: ${policy.eligibleIds[0]} .. ${policy.eligibleIds.at(-1)}; estimated reclaimable ${policy.savings} tokens. Protected suffix budget ${policy.budget}.` : `No eligible endpoints; protected suffix budget ${policy.budget}. Do not retry until eligibility changes.`;
+	return policy.eligibleIds.length ? `Eligible endpoints: ${policy.eligibleIds[0]} .. ${policy.eligibleIds.at(-1)} (${policy.eligibleIds.length} results; estimated reclaimable ${policy.savings} tokens). A range may span pinned, protected or already-compressed calls: those are skipped and only eligible results inside it are compressed. Protected suffix budget ${policy.budget}.` : `No eligible endpoints; protected suffix budget ${policy.budget}. This is not evidence that context is full: continue the task without compression. Do not retry until eligibility changes.`;
 }
-export function resolveTargets(messages: Message[], policy: Policy, params: { toolCallIds?: string[]; startToolCallId?: string; endToolCallId?: string }): string[] {
-	let ids = params.toolCallIds;
-	if (!ids) {
+export interface ResolvedTargets { ids: string[]; skipped: number }
+/** Range mode clips to eligible results (pinned/protected/compressed calls inside are skipped); explicit ID lists stay strict. */
+export function resolveTargetsDetailed(messages: Message[], policy: Policy, params: { toolCallIds?: string[]; startToolCallId?: string; endToolCallId?: string }): ResolvedTargets {
+	const eligible = new Set(policy.eligibleIds);
+	const known = new Set(messages.filter(isToolResult).map(m => m.toolCallId));
+	if (!params.toolCallIds) {
 		const ordered = messages.filter(isToolResult).map(m => m.toolCallId);
 		const start = ordered.indexOf(params.startToolCallId ?? "");
 		const end = ordered.indexOf(params.endToolCallId ?? "");
-		if (start < 0 || end < 0) throw new Error(`Unknown endpoint. ${endpointHint(policy)}`);
-		ids = ordered.slice(Math.min(start, end), Math.max(start, end) + 1);
+		if (start < 0 || end < 0) throw new Error(`endpoint_not_found: ${start < 0 ? `start "${params.startToolCallId}"` : `end "${params.endToolCallId}"`} is not a tool call ID with a result in the current context. Use IDs from the eligible endpoint list. ${endpointHint(policy)}`);
+		const range = ordered.slice(Math.min(start, end), Math.max(start, end) + 1);
+		const ids = range.filter(id => eligible.has(id));
+		if (!ids.length) throw new Error(`no_eligible_results: none of the ${range.length} results in this range is currently eligible (all pinned, protected or already compressed). ${endpointHint(policy)}`);
+		return { ids, skipped: range.length - ids.length };
 	}
-	ids = [...new Set(ids)];
-	const eligible = new Set(policy.eligibleIds);
-	if (!ids.length || ids.some(id => !eligible.has(id))) throw new Error(`protected_window_overlap or unknown/pinned ID: atomic refusal. ${endpointHint(policy)}`);
-	return ids;
+	const ids = [...new Set(params.toolCallIds)];
+	const unknown = ids.filter(id => !known.has(id)), blocked = ids.filter(id => known.has(id) && !eligible.has(id));
+	if (!ids.length || unknown.length || blocked.length) throw new Error(`protected_window_overlap or unknown/pinned ID: atomic refusal${unknown.length ? `; unknown: ${unknown.slice(0, 5).join(", ")}` : ""}${blocked.length ? `; protected/pinned/compressed: ${blocked.slice(0, 5).join(", ")}` : ""}. ${endpointHint(policy)}`);
+	return { ids, skipped: 0 };
+}
+export function resolveTargets(messages: Message[], policy: Policy, params: { toolCallIds?: string[]; startToolCallId?: string; endToolCallId?: string }): string[] {
+	return resolveTargetsDetailed(messages, policy, params).ids;
 }
 interface BranchEntry { type?: string; customType?: string; data?: unknown; message?: Message }
+
+/** The stock footer is provider-backed; a stored rewrite isn't a new usage measurement. */
+export function contextUsagePending(branch: readonly BranchEntry[]): boolean {
+	let rewrite = -1, measured = -1;
+	for (let i = 0; i < branch.length; i++) {
+		const entry = branch[i], data = entry.data as { record?: unknown; suspended?: unknown } | undefined;
+		if (entry.type === "custom" && entry.customType === ENTRY && (data?.record || typeof data?.suspended === "boolean")) rewrite = i;
+		const m = entry.message, usage = m?.usage as { input?: number; output?: number; cacheRead?: number; cacheWrite?: number } | undefined;
+		// Empty/error/aborted responses don't prove that the new request reached the provider.
+		if (m?.role === "assistant" && m.stopReason !== "error" && m.stopReason !== "aborted" && usage &&
+			(usage.input ?? 0) + (usage.cacheRead ?? 0) + (usage.cacheWrite ?? 0) > 0) measured = i;
+	}
+	return rewrite > measured;
+}
 interface Change { record?: CompressionRecord; id?: number; suspended?: boolean; manualMode?: boolean }
 function validRecord(value: unknown): value is CompressionRecord {
 	const r = value as CompressionRecord | undefined;
@@ -151,17 +186,24 @@ export function project(original: Message[], config: DcpConfig, state: SessionSt
 	// Replay records atomically: never partially apply a now-protected range.
 	const applicable = active.filter(r => !r.toolCallIds.some(id => policy.protectedIds.has(id)));
 	const targets = new Map(applicable.flatMap(r => r.toolCallIds.map(id => [id, r] as const)));
+	const eligible = new Set(policy.eligibleIds);
+	// Each record's summary is rendered once, in place, on its first present result.
+	const summaryAt = new Map<number, string>();
+	for (const m of messages) if (isToolResult(m) && eligible.has(m.toolCallId)) {
+		const rec = targets.get(m.toolCallId);
+		if (rec && !summaryAt.has(rec.id)) summaryAt.set(rec.id, m.toolCallId);
+	}
 	for (const m of messages) {
 		if (isToolResult(m)) {
 			const rec = targets.get(m.toolCallId);
-			if (!rec || !policy.eligibleIds.includes(m.toolCallId)) continue;
-			const saved = compressionPlaceholderToolResult(m, rec.id, rec.topic);
+			if (!rec || !eligible.has(m.toolCallId)) continue;
+			const saved = compressionPlaceholderToolResult(m, rec.id, rec.topic, summaryAt.get(rec.id) === m.toolCallId ? rec.summary : undefined);
 			if (!state.appliedCompressionTargets.has(m.toolCallId)) {
 				state.appliedCompressionTargets.add(m.toolCallId); state.stats.compressionsApplied++; state.stats.tokensSaved += saved;
 			}
 		}
-		// Summary lives in one explicit request-local record, not repeated in arguments.
-		if (isAssistant(m)) for (const c of toolCallsOf(m)) if (c.name === "compress" && typeof c.arguments.summary === "string") c.arguments = { ...c.arguments, summary: "[summary in DCP active-record context]" };
+		// The summary is rendered once, in the compressed results; do not repeat it in the call arguments.
+		if (isAssistant(m)) for (const c of toolCallsOf(m)) if (c.name === "compress" && typeof c.arguments.summary === "string") c.arguments = { ...c.arguments, summary: "[summary rendered in the compressed results of this record]" };
 	}
 	if (!(state.manualMode && !config.manualMode.automaticStrategies)) {
 		applyDeduplication(messages, config, state, policy.protectedIds);
@@ -174,20 +216,22 @@ export function project(original: Message[], config: DcpConfig, state: SessionSt
 		state.turnIndex = clock;
 		applyPurgeErrors(messages, config, state, policy.protectedIds);
 	}
-	for (const rec of active) messages.push(custom(SUMMARY, `[${NOTICE}]\n[DCP active record #${rec.id}: ${rec.topic}]\n${rec.summary}`));
 	return messages;
 }
 export function nudge(messages: Message[], config: DcpConfig, state: SessionState, policy: Policy, model: ModelBudget): Message[] {
 	state.nudgeFetchCount++;
+	// Eligibility and soft pressure estimates are not evidence of context exhaustion.
+	// With nothing actionable, stay silent rather than instructing the agent to stop.
 	if (config.compress.permission === "deny" || state.manualMode || !policy.eligibleIds.length || policy.savings <= 0) return messages;
 	const count = state.nudgeFetchCount;
 	const tokens = messages.reduce((n, m) => n + estimateMessage(m), 0);
 	const floor = resolveModelLimit(config.compress.minContextLimit, config.compress.modelMinLimits, model, model.contextWindow);
 	const ceiling = resolveModelLimit(config.compress.maxContextLimit, config.compress.modelMaxLimits, model, model.contextWindow);
+	const spaced = count - state.lastSoftNudgeTurn >= Math.max(1, config.compress.nudgeEveryTurns);
 	const iterations = config.compress.iterationNudgeThreshold;
 	const iteration = iterations > 0 && count - state.lastIterationNudgeAt >= iterations;
-	const throttle = count % Math.max(1, config.compress.nudgeFrequency) === 0 && count - state.lastSoftNudgeTurn >= Math.max(1, config.compress.nudgeEveryTurns);
+	const throttle = count % Math.max(1, config.compress.nudgeFrequency) === 0 && spaced;
 	if (!iteration && !(tokens >= floor && throttle)) return messages;
 	state.lastIterationNudgeAt = count; state.lastSoftNudgeTurn = count;
-	return [...messages, custom(REMINDER, `[${NOTICE}]\n[DCP request-local reminder${tokens >= ceiling ? "; context pressure high" : ""}] Compress a closed eligible work-stream with a factual summary if useful. ${endpointHint(policy)} Never retry protected IDs until eligibility changes. User instructions, prose, arguments and pinned outputs still grow; this is not an unlimited-context guarantee.`)];
+	return [...messages, custom(REMINDER, `[${NOTICE}]\n[DCP request-local reminder${tokens >= ceiling ? "; context pressure high" : ""}] Compress a closed eligible work-stream with a factual summary if useful. ${endpointHint(policy)} Ranges skip pinned/protected calls automatically; never retry the same refused IDs until eligibility changes. These are soft pruning thresholds and approximate counts, not a stop signal. After useful compression, continue the task; no eligible results does not mean context is full. User instructions, prose, arguments and pinned outputs still grow; this is not an unlimited-context guarantee.`)];
 }

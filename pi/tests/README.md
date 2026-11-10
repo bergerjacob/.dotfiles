@@ -26,11 +26,33 @@ See `../README.md` for operational defaults and unresolved upstream issues.
 parallel/pending batches, huge results, image/thinking/argument accounting,
 shared range/message/sweep/replay eligibility and atomic refusal, >64 request
 nudges, repeat fresh-original purge with stable stats, frozen inputs/provider
-pairing, summary-once projection, branch/restart/fork/suspension replay and legacy
+pairing, in-place summary-once projection, range clipping over pinned calls,
+no-eligibility/manual/denied silence above soft pressure thresholds, continue-work
+reminder wording, pinned skill preservation and fork-skill discovery,
+claude-bridge rebuild notification, branch/restart/fork/suspension replay and legacy
 migration. Its integration smoke loads the local extension with Pi's jiti and
 host typebox mapping, checks single registration, runs hooks/tool persistence and
-commands without model/network calls. Strict typecheck includes the entry/core
+commands without model/network calls. `dcp-live-e2e.sh` is separate and opt-in: a real Pi process with real model requests (see `../README.md`). Strict typecheck includes the entry/core
 and their vendored imports. Normal tests do not touch the clipboard.
+
+`dcp-sdk.test.ts` drives the real SDK/extension runner/tool scheduler with a
+scripted in-process provider and isolated auth/settings. It checks actual outgoing
+payload shrinkage, summary visibility, canonical original preservation and the
+rendered stock footer's cache-aware percentage after compression, decompression
+and recompression. Error/all-zero usage cannot clear the pending display.
+
+`sandbox-network.test.ts` uses an authenticated local HTTP/CONNECT proxy, a
+private trusted test CA and fake proxy-resolved hostnames. Ordinary curl, Node
+HTTP/HTTPS/fetch/SSE and Python urllib must work; denied hosts must fail. It tests
+startup/toggle Node inheritance, redacted health output, the actual registered
+Codex adapter's offline option delegation and preserved native OAuth/catalog.
+The real Codex SSE implementation also sends a synthetic authenticated request
+through the fixture proxy and consumes a mocked completed-response event.
+Native WebSocket proxy support is diagnostic, not required: sandbox automatic
+Codex transport selects the tested SSE path. No public service, real credential
+or model request is used. A proxy-off fake-host failure tests proxy DNS dependency,
+not direct-IP egress denial or namespace enforcement. Needs `openssl`, `curl` and
+`python3`; run the full suite on the supported Node version.
 
 ## Neovim prompt checks
 

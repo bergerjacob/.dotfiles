@@ -21,11 +21,11 @@
       "zai/glm-5.3": { "reserveTokens": 250000 },
       "zai/glm-5.3-flash": { "reserveTokens": 250000 },
       "opencode-go/deepseek-v4.1-flash": { "reserveTokens": 250000 },
-      "opencode-go/glm-5.3": { "reserveTokens": 250000 },
-      "opencode-go/kimi-k3": { "reserveTokens": 262144 },
+      "openrouter/deepseek/deepseek-v4.1-flash": { "reserveTokens": 250000 },
       "claude-bridge/claude-sonnet-5-5": { "reserveTokens": 250000 },
       "claude-bridge/claude-haiku-5-5": { "reserveTokens": 250000 },
-      "claude-bridge/claude-opus-5-5": { "reserveTokens": 250000 }
+      "claude-bridge/claude-opus-5-5": { "reserveTokens": 250000 },
+      "claude-bridge/claude-fable-5-1": { "reserveTokens": 250000 }
     }
   },
   "subagents": {
@@ -52,7 +52,8 @@
     "npm:pi-btw",
     {
       "source": "npm:@davecodes/pi-dcp@0.2.0",
-      "extensions": []
+      "extensions": [],
+      "skills": []
     },
     "npm:pi-sandbox",
     {

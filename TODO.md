@@ -443,3 +443,38 @@ These results supersede the pending image/local-key checks immediately above:
 
 ## browser QA quirks (observed 2026-10-30)
 - 2026-10-30: dotfiles-browser owned daemon disappeared between bash invocations during production QA; self-contained bounded journeys partly worked but input/navigation state was inconsistent. Matching Playwright Chromium1248 absent. Investigate runner lifecycle and state continuity; no host workaround or browser substitution used.
+
+## mira sandbox quirks (observed 2026-11-01)
+- 2026-11-01: In the mira repo, `git status` lists sandbox-mounted `.bashrc/.zshrc/.profile/.bash_profile/.zprofile/.gitconfig/.mcp.json/.ripgreprc` as untracked; they are `/dev/null` character devices in the project root (and `.mcp.json` is unreadable). Worked around by staging explicit paths only. Also, sandbox pip cannot reach PyPI (proxy 403 "Tunnel connection failed"), which blocked a `pip install nucleation` spike. Suggested fix: hide the null-mounted dotfiles from git (e.g. via info/exclude in the sandbox setup) and allowlist pypi.org/files.pythonhosted.org for pip in the sandbox profile.
+- 2026-11-01 (update): pypi.org index is reachable but files.pythonhosted.org is blocked by the sandbox proxy (uv/pip fail at wheel download with 'tunnel error'); npm registry returns 403. Suggested fix: allowlist files.pythonhosted.org and registry.npmjs.org.
+
+## pi / subagent harness quirks (observed 2026-11-02)
+- DCP `compress` refused every range ("protected_window_overlap or unknown/pinned ID") in a long session, probably because any range containing a mutation tool call (bash with git commit, write, subagent launch) is treated as pinned; the "eligible endpoints" reminder then overstates what can be compressed. Suggested fix: make the reminder list only ranges free of pinned calls, or let compress skip pinned calls inside the range. **Fixed 2026-11-02** in `pi/agent/extensions/dcp/core.ts`: range mode now clips to eligible results (pinned, protected and already-compressed calls inside are skipped and reported); refusals name `endpoint_not_found`, `no_eligible_results`, or the offending IDs; explicit ID lists stay strictly atomic. Regression test added; verified live after reload and in real Pi processes (pi/tests/dcp-live-e2e.sh). **Follow-up 2026-11-02:** summaries now render in place in the first compressed result (no synthetic user messages), and DCP notifies pi-claude-bridge after every compression change - the bridge only re-syncs on message-count changes, so before this fix compression never shrank requests on claude-bridge modes (claude, claude-xl, ds-claude-combo). Suggested upstream fix for pi-claude-bridge: detect content drift in already-synced messages (hash prefix) instead of count only.
+- Workflow `subagent_wait` returns instantly with "attention required" once any child tripped a "tool open for 600s" notice, so it cannot be used to block on the remaining children; polling with `sleep` was needed.
+- Workflow-level `timeoutMs` kills children mid-task (a 2h T4 agent was cut off; resuming the child worked).
+- `pkill -f "<pattern>"` run from a bash tool call killed the tool's own shell because the command line contained the pattern (use `ps | grep "[p]attern" | xargs kill`).
+- Spawned agents run behind a github-only proxy; downloads (Mojang jar, HF, PyPI) had to be done from the parent shell.
+
+## sandbox bash quirks (observed 2026-11-02)
+- First bash call of a revived subagent in mira failed: `bwrap: Can't bind mount .../mira/.bashrc ... No such file or directory` (repo-local dotfile bind mount of a file that was gone). An immediate retry worked. Suggested fix: skip bind mounts for dotfiles that do not exist.
+
+## tmux tool quirks (observed 2026-11-02)
+- The `tmux` tool refused `run` ("Pi's window contains unrelated or legacy panes"): window 4 of the project session holds old zsh panes (hard_screens, composition_prototype). Workaround used: the repo's own `hs_jobs` session window via `tmux new-window -d -t hs_jobs` (hard_screens/launch.sh convention). Suggested fix: close the stale zsh panes in Pi's window, or let the tool ignore idle shells.
+
+## fetch_content / subagent quirks (observed 2026-11-03)
+- `fetch_content` mode=answer fails with a prompt-capture error (seen by two Oracle runs); readable/raw works. Suggested fix: check the answer-mode prompt plumbing.
+- Haiku-tier watcher subagents often stop early ("report partial progress") despite never-stop instructions; also standard children sometimes hold one bash call >10 min and trigger attention nudges. Workaround: explicit call-count and stop-condition wording, shorter scratch calls.
+
+## subagent bash background-process quirks (observed 2026-11-05)
+- A standard subagent's `nohup cmd > log &` (also `setsid nohup`, `(setsid ... &)`) is killed when the bash tool call returns, so the task rule "launch >40 s commands in the background with nohup, poll with short calls" cannot work as written. Workaround used: one short-lived tmux pane (`tmux split-window -h -d`) per job in the project session, closed on completion. Suggested fix: let sandboxed subagents detach processes from the call cgroup (or document the tmux route in the subagent prompt).
+- (2026-11-05, probe B) The tmux workaround itself failed later in the same session: `tmux split-window -h -d -t $TMUX_PANE` returned 'no space for new pane' (the Pi pane was 2 columns wide in a 383x110 window shared with 4 foreign panes), so jobs that need >40 s could not be launched at all after the first batch; workaround: batch background processes inside a single <=38 s call (processes survive until the call returns). Suggested fix: let subagents detach processes from the call cgroup, or give them a documented non-pane job runner.
+
+## tmux/sandbox quirks for subagent compute (observed 2026-11-05, probe A)
+- From inside the subagent sandbox `ps`/`pgrep`/`pkill` cannot see processes started in tmux panes (pid namespace), and `pkill -f <pattern>` matches the calling shell itself (exit 143). Workaround: `tmux kill-pane -t <pane_id>` (find the id with `tmux list-panes -F '#{pane_id} #{pane_start_command}'`). `tmux split-window` fails with "no space for new pane" once the project window holds ~6 panes (other probes' panes); workaround: wait for a pane to finish, then relaunch. Suggested fix: give subagents a documented job runner (detached cgroup) with a `jobs`/`kill` interface.
+
+## pi sandbox networking quirks (observed 2026-11-07)
+
+- 2026-11-07: Managed allowlist omitted Codex inference/OAuth and common package hosts; added exact domains, consistent future-child Node proxy activation and inherited-sandbox Codex automatic SSE (native Node 24.13 WebSocket failed the authenticated proxy fixture). Proxy/TLS tests and a nested-sandbox GitHub request passed without host tmux. Reload is needed for the running sandbox to adopt the new policy. Credential writes intentionally remain blocked: OAuth refresh persistence needs a separately approved auth-file write exception or trusted broker; do not copy rotating tokens into projects or silently remove protection.
+
+## native Pi shell-network quirks (observed 2026-11-07)
+- 2026-11-07: Native Pi CLI model calls from the coding tool shell failed with fetch failed behind the inherited authenticated localhost:3128 proxy; the same isolated native CLI succeeded in an explicitly user-authorized host tmux pane. Workaround used only for these Pi trials; no global settings/proxy changes. Suggested fix: make tool-vs-host network boundaries visible and ensure the sandbox toggle/config accurately reflects allowed provider access.
