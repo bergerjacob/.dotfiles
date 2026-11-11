@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { jiti, requirePi } from "./helpers.ts";
 import { DEFAULT_CONFIG } from "../agent/extensions/dcp/vendor/lib/config.ts";
 import { createSessionState } from "../agent/extensions/dcp/vendor/lib/state.ts";
-import { rollingPolicy, actionablePolicy, resolveTargets, resolveTargetsDetailed, notifyHistoryRewritten, BRIDGE_REBUILD_HOOKS, project, replay, nudge, estimateMessage, contextUsagePending, SUMMARY, REMINDER, ENTRY, type Message } from "../agent/extensions/dcp/core.ts";
+import { rollingPolicy, actionablePolicy, resolveTargets, resolveTargetsDetailed, notifyHistoryRewritten, BRIDGE_REBUILD_HOOKS, project, replay, nudge, MIN_NUDGE_SAVINGS, estimateMessage, contextUsagePending, SUMMARY, REMINDER, ENTRY, type Message } from "../agent/extensions/dcp/core.ts";
 const config = () => { const c = structuredClone(DEFAULT_CONFIG); c.strategies.deduplication.enabled = false; return c; };
 const call = (id: string, name = "read", size = 3): Message => ({ role: "assistant", timestamp: 0, content: [{ type: "toolCall", id, name, arguments: { path: id, body: "x".repeat(size) } }] });
 const result = (id: string, size = 3000, name = "read"): Message => ({ role: "toolResult", timestamp: 0, toolCallId: id, toolName: name, isError: false, content: [{ type: "text", text: "x".repeat(size) }] });
@@ -247,4 +247,11 @@ test("compression changes notify pi-claude-bridge so the rewritten history reach
   assert.equal(notifyHistoryRewritten("s1", "dcp:compress"), 1); assert.deepEqual(calls, [["s1", "dcp:compress"]]);
   assert.equal(notifyHistoryRewritten(undefined, "dcp:sweep"), 1); assert.deepEqual(calls.at(-1), [null, "dcp:sweep"]);
  } finally { if (saved === undefined) delete g[BRIDGE_REBUILD_HOOKS]; else g[BRIDGE_REBUILD_HOOKS] = saved; }
+});
+
+test("reminders stay silent when the reclaimable output is not worth a compression", () => {
+ const c = config(), m = loop(), p = rollingPolicy(m, c), s = createSessionState();
+ c.compress.minContextLimit = 1; c.compress.iterationNudgeThreshold = 1; c.compress.nudgeFrequency = 1; c.compress.nudgeEveryTurns = 1;
+ assert.equal(nudge(m, c, s, { ...p, savings: MIN_NUDGE_SAVINGS - 1 }, {}), m);
+ assert.ok(nudge(m, c, s, { ...p, savings: MIN_NUDGE_SAVINGS }, {}).some(x => x.customType === REMINDER));
 });

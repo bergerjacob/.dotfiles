@@ -218,11 +218,13 @@ export function project(original: Message[], config: DcpConfig, state: SessionSt
 	}
 	return messages;
 }
+/** Reminders cost a user-role message and make the agent deliberate about it; below this much reclaimable output they are pure noise. */
+export const MIN_NUDGE_SAVINGS = 3000;
 export function nudge(messages: Message[], config: DcpConfig, state: SessionState, policy: Policy, model: ModelBudget): Message[] {
 	state.nudgeFetchCount++;
 	// Eligibility and soft pressure estimates are not evidence of context exhaustion.
 	// With nothing actionable, stay silent rather than instructing the agent to stop.
-	if (config.compress.permission === "deny" || state.manualMode || !policy.eligibleIds.length || policy.savings <= 0) return messages;
+	if (config.compress.permission === "deny" || state.manualMode || !policy.eligibleIds.length || policy.savings < MIN_NUDGE_SAVINGS) return messages;
 	const count = state.nudgeFetchCount;
 	const tokens = messages.reduce((n, m) => n + estimateMessage(m), 0);
 	const floor = resolveModelLimit(config.compress.minContextLimit, config.compress.modelMinLimits, model, model.contextWindow);
